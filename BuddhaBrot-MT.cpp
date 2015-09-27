@@ -155,6 +155,8 @@ int Bw = 1000; // bitmap width
 int Bh = 1000; // bitmap height
 
 //// cm coloring methods
+//// coloring method 0 : rank-order mapping
+//// coloring method 1 : histogram mapping
 //// coloring method 0 : if cm0n > 1 ? ci = ct_e * H[count] / (cm0n - 1) : ci = ct_s TODO
 //// coloring method 1 : if cm1n > 0 ? ci = ct_e * H[count] / cm1n : ci = ct_s TODO check ct_e * () in code
 //// coloring method 2 : 0 , log
