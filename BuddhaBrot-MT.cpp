@@ -3273,8 +3273,6 @@ int main(int argc, char* argv[])
     } else {
         td_nb = MIN(ceil((double)td_vc_nb / 3) * 3, TD_MAX);
     }
-    
-    td_nb = 3;
 
     load_location_and_preset(0, 1.0, 0.0, 0.0, 0.0, 0.0, 1000, 1000, 0, -1, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0);
 
