@@ -170,9 +170,9 @@ int cm1n[LR_NB]; // normalization value for coloring method 1 3 = (number of pix
 
 //// CT color tables
 //// index -> RGB/Grey value
-//// color table type 0 : Grey : 0->255->0
-//// color table type 1 : Grey : 0->255
-//// color table type 2 : Grey : 255->0
+//// color table type 0 : Grey : 0->255->0 0->255->0 0->255->0
+//// color table type 1 : Grey : 0->255 0->255 0->255
+//// color table type 2 : Grey : 255->0 255->0 255->0
 //// color table type 3 : RGB : 0->R->RG->RGB->RG->R->0
 typedef unsigned char rgb[3]; // an RGB value
 rgb* CT; // 1 color table
@@ -1075,7 +1075,7 @@ int save_parameters()
         return (0);
     }
 
-    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npath_plot_start1 %d\npath_plot_end1 %d\npath_min_iter1 %d\n\nbuddhatype2 %d\nbailout2 %d\npath_plot_start2 %d\npath_plot_end2 %d\npath_min_iter2 %d\n\nbuddhatype3 %d\nbailout3 %d\npath_plot_start3 %d\npath_plot_end3 %d\npath_min_iter3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2], td_nb);
+    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npath_plot_start1 %d\npath_plot_end1 %d\npath_min_iter1 %d\n\nbuddhatype2 %d\nbailout2 %d\npath_plot_start2 %d\npath_plot_end2 %d\npath_min_iter2 %d\n\nbuddhatype3 %d\nbailout3 %d\npath_plot_start3 %d\npath_plot_end3 %d\npath_min_iter3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2], td_nb);
     fprintf(parameters_file, "\n");
 
     for (int td_i = 0; td_i < TD_MAX; td_i++) {
@@ -1110,7 +1110,7 @@ int load_parameters(int pause_calculation_threads, int load_status, int minmem)
     int coloringmethod3 = 0, colortableoffset3 = 0;
     int numberofcalculationthreads = 0;
 
-    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npath_plot_start1 %d\npath_plot_end1 %d\npath_min_iter1 %d\n\nbuddhatype2 %d\nbailout2 %d\npath_plot_start2 %d\npath_plot_end2 %d\npath_min_iter2 %d\n\nbuddhatype3 %d\nbailout3 %d\npath_plot_start3 %d\npath_plot_end3 %d\npath_min_iter3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &path_plot_start1, &path_plot_end1, &path_min_iter1, &buddhatype2, &bailout2, &path_plot_start2, &path_plot_end2, &path_min_iter2, &buddhatype3, &bailout3, &path_plot_start3, &path_plot_end3, &path_min_iter3, &colortabletype, &coloringmethod1, &colortableoffset1, &coloringmethod2, &colortableoffset2, &coloringmethod3, &colortableoffset3, &numberofcalculationthreads)) {}
+    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npath_plot_start1 %d\npath_plot_end1 %d\npath_min_iter1 %d\n\nbuddhatype2 %d\nbailout2 %d\npath_plot_start2 %d\npath_plot_end2 %d\npath_min_iter2 %d\n\nbuddhatype3 %d\nbailout3 %d\npath_plot_start3 %d\npath_plot_end3 %d\npath_min_iter3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &path_plot_start1, &path_plot_end1, &path_min_iter1, &buddhatype2, &bailout2, &path_plot_start2, &path_plot_end2, &path_min_iter2, &buddhatype3, &bailout3, &path_plot_start3, &path_plot_end3, &path_min_iter3, &colortabletype, &coloringmethod1, &colortableoffset1, &coloringmethod2, &colortableoffset2, &coloringmethod3, &colortableoffset3, &numberofcalculationthreads)) {}
 
     if (minmem == 0) {
         while (numberofcalculationthreads > td_nb) {
@@ -2751,15 +2751,15 @@ void sdl_message_check()
             }
 
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i ct%i cm%i.%i.%i bb%i.%i.%i.%i.%i W(%.3f %.3f %.1f) %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)total_paths_plotted);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i W(%.3f %.3f %.1f) %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.3f %.3f %.1f) %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
             }
 
             writeRtiletoB(filename, RWox, RWoy, Ww, Wh);
@@ -2774,15 +2774,15 @@ void sdl_message_check()
             }
 
             if (lr_mode == 0) {
-                sprintf(dirname, "lm%i ct%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
             }
 
             if (lr_mode == 1) {
-                sprintf(dirname, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
             }
 
             if (lr_mode == 2) {
-                sprintf(dirname, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
             }
 
             sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -2805,15 +2805,15 @@ void sdl_message_check()
             }
 
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i ct%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
             }
 
             writeRtoB(filename);
@@ -2860,15 +2860,15 @@ void visualisation_thread()
                 }
 
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i ct%i cm%i.%i.%i bb%i.%i.%i.%i.%i W(%.3f %.3f %.1f) %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)total_paths_plotted);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i W(%.3f %.3f %.1f) %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.3f %.3f %.1f) %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
                 }
 
                 writeRtiletoB(filename, RWox, RWoy, Ww, Wh);
@@ -2883,15 +2883,15 @@ void visualisation_thread()
                 }
 
                 if (lr_mode == 0) {
-                    sprintf(dirname, "lm%i ct%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(dirname, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(dirname, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
                 }
 
                 sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -2914,15 +2914,15 @@ void visualisation_thread()
                 }
 
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i ct%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) %ix%i %g.png", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), Rw, Rh, (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
                 }
 
                 writeRtoB(filename);
@@ -3234,7 +3234,7 @@ void visualisation_thread()
                 total_paths_plotted += Pp[td_i];
             }
 
-            sprintf(titlebar, "lm%i ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.3f %.3f %.1f) W(%.3f %.3f %.1f) th%i %.4f %g", lr_mode, ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), td_nb, Rmax / 4294967295.0, (double)total_paths_plotted);
+            sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)total_paths_plotted);
             SDL_SetWindowTitle(sdl_window, titlebar);
             SDL_UpdateTexture(sdl_texture, NULL, sdl_surface->pixels, Ww * sizeof(Uint32));
             SDL_RenderClear(sdl_renderer);
