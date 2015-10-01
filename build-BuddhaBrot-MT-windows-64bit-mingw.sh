@@ -3,4 +3,4 @@ export PATH=".:/usr/local/bin:/mingw/bin:/bin:$PATH"
 export PATH="/c/mingw-x86_64-4.9.3-release-win32-sjlj-rt_v4-rev1/bin:$PATH"
 
 # -mconsole for console output
-g++ -Wall -DWINDOWS -s -static -O3 -mtune=nehalem -fopenmp -mfpmath=sse -IdSFMT -Ipng-windows-64bit-mingw -ISDL-windows-64bit-mingw -o BuddhaBrot-MT-windows-64bit.exe BuddhaBrot-MT.cpp dSFMT/*.cpp png-windows-64bit-mingw/libpng.a png-windows-64bit-mingw/libz.a -lmingw32 SDL-windows-64bit-mingw/libSDL2main.a SDL-windows-64bit-mingw/libSDL2.a -mwindows -lgdi32 -limm32 -lole32 -loleaut32 -lversion -lwinmm
+g++ -Wall -DWINDOWS -s -static -O3 -march=core2 -fopenmp -mfpmath=sse -IdSFMT -Ipng-windows-64bit-mingw -ISDL-windows-64bit-mingw -o BuddhaBrot-MT-windows-64bit.exe BuddhaBrot-MT.cpp dSFMT/*.cpp png-windows-64bit-mingw/libpng.a png-windows-64bit-mingw/libz.a -lmingw32 SDL-windows-64bit-mingw/libSDL2main.a SDL-windows-64bit-mingw/libSDL2.a -mwindows -lgdi32 -limm32 -lole32 -loleaut32 -lversion -lwinmm
