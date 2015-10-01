@@ -1,0 +1,66 @@
+centerx 0.000000
+centery 0.000000
+zoom 1.000000
+windowcenterx 0.000000
+windowcentery 0.000000
+windowzoom 1.000000
+rendersizex 1000
+rendersizey 1000
+windowoffsetx 0
+windowoffsety 0
+
+layermode 0
+
+buddhatype1 0
+bailout1 1000
+pathplotstart1 0
+pathplotend1 0
+pathminninf1 0
+
+buddhatype2 0
+bailout2 1000
+pathplotstart2 0
+pathplotend2 0
+pathminninf2 0
+
+buddhatype3 0
+bailout3 1000
+pathplotstart3 0
+pathplotend3 0
+pathminninf3 0
+
+colortabletype 1
+
+coloringmethod1 0
+colortableoffset1 0
+
+coloringmethod2 0
+colortableoffset2 0
+
+coloringmethod3 0
+colortableoffset3 0
+
+numberofcalculationthreads 9
+
+pathsplottedthread00 0
+pathsplottedthread01 0
+pathsplottedthread02 0
+pathsplottedthread03 0
+pathsplottedthread04 0
+pathsplottedthread05 0
+pathsplottedthread06 0
+pathsplottedthread07 0
+pathsplottedthread08 0
+pathsplottedthread09 0
+pathsplottedthread10 0
+pathsplottedthread11 0
+pathsplottedthread12 0
+pathsplottedthread13 0
+pathsplottedthread14 0
+pathsplottedthread15 0
+pathsplottedthread16 0
+pathsplottedthread17 0
+
+pathsplottedsum 0
+
+rendercountmatrixmax 0

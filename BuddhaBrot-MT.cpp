@@ -105,7 +105,7 @@ int bb_type[TD_MAX]; // BuddhaBrot type , per thread
 int bb_bail[TD_MAX]; // bailout , per thread
 int bb_pps[TD_MAX]; // path plot start : start plotting for n = bb_pps , per thread
 int bb_ppe[TD_MAX]; // path plot end : end plotting for n = n_inf - bb_ppe , per thread
-int bb_minn[TD_MAX]; // minimum n_inf : plot path only if n_inf >= bb_minn , per thread
+int bb_minn[TD_MAX]; // path minimum n_inf : plot path only if n_inf >= bb_minn , per thread
 
 //// R render (count matrix (of pixels))
 //// registers the number of times a path passed in a pixel
@@ -286,7 +286,7 @@ void reponsive_caption_update(const char* string)
     SDL_PollEvent(&sdl_event);
 }
 
-void pause_calculation_threads_and_wait()
+void pause_calcthreads_and_wait()
 {
     td_pause = 1;
     #pragma omp flush(td_pause)
@@ -306,13 +306,13 @@ void pause_calculation_threads_and_wait()
     }
 }
 
-void reset_counter_mats(int td_i)
+void reset_R(int td_i)
 {
     Pp[td_i] = 0;
     memset(R[td_i], 0, Rw * Rh * sizeof(unsigned int));
 }
 
-void realloc_counter_mats(int td_i)
+void realloc_R(int td_i)
 {
     Pp[td_i] = 0;
 
@@ -324,7 +324,7 @@ void realloc_counter_mats(int td_i)
     R[td_i] = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
 }
 
-void realloc_paths(int td_i)
+void realloc_P(int td_i)
 {
     if (P[td_i] != NULL) {
         free(P[td_i]);
@@ -341,7 +341,7 @@ void realloc_paths(int td_i)
     RPo[td_i] = (int*)calloc(2 * bb_bail[td_i], sizeof(int));
 }
 
-void free_thread(int td_i)
+void free_calcthread(int td_i)
 {
     Pp[td_i] = 0;
 
@@ -361,47 +361,47 @@ void free_thread(int td_i)
     }
 }
 
-void realloc_thread(int td_i)
+void realloc_calcthread(int td_i)
 {
-    realloc_counter_mats(td_i);
-    realloc_paths(td_i);
+    realloc_R(td_i);
+    realloc_P(td_i);
 }
 
-void decrease_number_of_calculation_threads()
+void decrease_num_calcthreads()
 {
-    pause_calculation_threads_and_wait();
-    int new_number_of_calculation_threads = MAX(td_nb - 3, 3);
+    pause_calcthreads_and_wait();
+    int new_num_calcthreads = MAX(td_nb - 3, 3);
 
-    for (int td_i = new_number_of_calculation_threads; td_i < td_nb; td_i++) {
-        free_thread(td_i);
+    for (int td_i = new_num_calcthreads; td_i < td_nb; td_i++) {
+        free_calcthread(td_i);
     }
 
-    td_nb = new_number_of_calculation_threads;
+    td_nb = new_num_calcthreads;
     td_pause = 0;
     #pragma omp flush(td_pause, td_nb)
 }
 
-void increase_number_of_calculation_threads()
+void increase_num_calcthreads()
 {
-    int new_number_of_calculation_threads = MIN(td_nb + 3, TD_MAX);
+    int new_num_calcthreads = MIN(td_nb + 3, TD_MAX);
 
-    for (int td_i = td_nb; td_i < new_number_of_calculation_threads; td_i++) {
+    for (int td_i = td_nb; td_i < new_num_calcthreads; td_i++) {
         bb_type[td_i] = bb_type[td_i - 3];
         bb_bail[td_i] = bb_bail[td_i - 3];
         bb_pps[td_i] = bb_pps[td_i - 3];
         bb_ppe[td_i] = bb_ppe[td_i - 3];
         bb_minn[td_i] = bb_minn[td_i - 3];
-        realloc_thread(td_i);
+        realloc_calcthread(td_i);
     }
 
-    td_nb = new_number_of_calculation_threads;
+    td_nb = new_num_calcthreads;
     #pragma omp flush(td_nb)
 }
 
-void load_location(int pause_calculation_threads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh)
+void load_location(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh)
 {
-    if (pause_calculation_threads) {
-        pause_calculation_threads_and_wait();
+    if (pause_calcthreads) {
+        pause_calcthreads_and_wait();
     }
 
     if (zoom > 0.0) {
@@ -424,7 +424,7 @@ void load_location(int pause_calculation_threads, double zoom, double x_l, doubl
         RWoy = 0;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            reset_counter_mats(td_i);
+            reset_R(td_i);
         }
     } else {
         if (Rw == 0) {
@@ -469,7 +469,7 @@ void load_location(int pause_calculation_threads, double zoom, double x_l, doubl
         }
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            realloc_counter_mats(td_i);
+            realloc_R(td_i);
         }
     }
 
@@ -480,344 +480,344 @@ void load_location(int pause_calculation_threads, double zoom, double x_l, doubl
     Wi_lo = Ri_lo + RWox / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
 
-    if (pause_calculation_threads) {
+    if (pause_calcthreads) {
         td_pause = 0;
         #pragma omp flush(td_pause)
     }
 }
 
-void load_preset(int pause_calculation_threads, int load_layer_mode, int load_selected_layer, int load_buddha_type_1, int load_bailout_1, int load_path_plot_start_1, int load_path_plot_end_1, int load_path_min_iter_1, int load_buddha_type_2, int load_bailout_2, int load_path_plot_start_2, int load_path_plot_end_2, int load_path_min_iter_2, int load_buddha_type_3, int load_bailout_3, int load_path_plot_start_3, int load_path_plot_end_3, int load_path_min_iter_3, int load_color_table_type, int load_coloring_method_1, int load_color_table_8b_offset_1, int load_coloring_method_2, int load_color_table_8b_offset_2, int load_coloring_method_3, int load_color_table_8b_offset_3)
+void load_preset(int pause_calcthreads, int load_lr_mode, int load_selectedlayer, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_ct_o1, int load_cm2, int load_ct_o2, int load_cm3, int load_ct_o3)
 {
-    if (pause_calculation_threads) {
-        pause_calculation_threads_and_wait();
+    if (pause_calcthreads) {
+        pause_calcthreads_and_wait();
     }
 
-    load_bailout_1 = MAX(load_bailout_1, 0);
-    load_bailout_2 = MAX(load_bailout_2, 0);
-    load_bailout_3 = MAX(load_bailout_3, 0);
-    load_path_plot_start_1 = MIN(MAX(load_path_plot_start_1, 0), load_bailout_1);
-    load_path_plot_start_2 = MIN(MAX(load_path_plot_start_2, 0), load_bailout_2);
-    load_path_plot_start_3 = MIN(MAX(load_path_plot_start_3, 0), load_bailout_3);
-    load_path_plot_end_1 = MIN(MAX(load_path_plot_end_1, 0), load_bailout_1);
-    load_path_plot_end_2 = MIN(MAX(load_path_plot_end_2, 0), load_bailout_2);
-    load_path_plot_end_3 = MIN(MAX(load_path_plot_end_3, 0), load_bailout_3);
-    load_path_min_iter_1 = MIN(MAX(load_path_min_iter_1, 0), load_bailout_1);
-    load_path_min_iter_2 = MIN(MAX(load_path_min_iter_2, 0), load_bailout_2);
-    load_path_min_iter_3 = MIN(MAX(load_path_min_iter_3, 0), load_bailout_3);
-    lr_mode = load_layer_mode;
-    ct_type = load_color_table_type;
+    load_bb_bail1 = MAX(load_bb_bail1, 0);
+    load_bb_bail2 = MAX(load_bb_bail2, 0);
+    load_bb_bail3 = MAX(load_bb_bail3, 0);
+    load_bb_pps1 = MIN(MAX(load_bb_pps1, 0), load_bb_bail1);
+    load_bb_pps2 = MIN(MAX(load_bb_pps2, 0), load_bb_bail2);
+    load_bb_pps3 = MIN(MAX(load_bb_pps3, 0), load_bb_bail3);
+    load_bb_ppe1 = MIN(MAX(load_bb_ppe1, 0), load_bb_bail1);
+    load_bb_ppe2 = MIN(MAX(load_bb_ppe2, 0), load_bb_bail2);
+    load_bb_ppe3 = MIN(MAX(load_bb_ppe3, 0), load_bb_bail3);
+    load_bb_minn1 = MIN(MAX(load_bb_minn1, 0), load_bb_bail1);
+    load_bb_minn2 = MIN(MAX(load_bb_minn2, 0), load_bb_bail2);
+    load_bb_minn3 = MIN(MAX(load_bb_minn3, 0), load_bb_bail3);
+    lr_mode = load_lr_mode;
+    ct_type = load_ct_type;
     ct_load(ct_type);
 
     if (lr_mode == 0) {
-        cm[0] = load_coloring_method_1;
-        cm[1] = load_coloring_method_1;
-        cm[2] = load_coloring_method_1;
-        ct_o[0] = load_color_table_8b_offset_1;
-        ct_o[1] = load_color_table_8b_offset_1;
-        ct_o[2] = load_color_table_8b_offset_1;
+        cm[0] = load_cm1;
+        cm[1] = load_cm1;
+        cm[2] = load_cm1;
+        ct_o[0] = load_ct_o1;
+        ct_o[1] = load_ct_o1;
+        ct_o[2] = load_ct_o1;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            if (bb_type[td_i] != load_buddha_type_1 || bb_bail[td_i] != load_bailout_1 || bb_pps[td_i] != load_path_plot_start_1 || bb_ppe[td_i] != load_path_plot_end_1 || bb_minn[td_i] != load_path_min_iter_1) {
-                bb_type[td_i] = load_buddha_type_1;
+            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
+                bb_type[td_i] = load_bb_type1;
 
-                if (bb_bail[td_i] != load_bailout_1) {
-                    bb_bail[td_i] = load_bailout_1;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail1) {
+                    bb_bail[td_i] = load_bb_bail1;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_1;
-                bb_ppe[td_i] = load_path_plot_end_1;
-                bb_minn[td_i] = load_path_min_iter_1;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps1;
+                bb_ppe[td_i] = load_bb_ppe1;
+                bb_minn[td_i] = load_bb_minn1;
+                reset_R(td_i);
             }
         }
     }
 
-    if (lr_mode == 1 && load_selected_layer != -1) {
-        cm[load_selected_layer] = load_coloring_method_1;
-        ct_o[load_selected_layer] = load_color_table_8b_offset_1;
+    if (lr_mode == 1 && load_selectedlayer != -1) {
+        cm[load_selectedlayer] = load_cm1;
+        ct_o[load_selectedlayer] = load_ct_o1;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            if (bb_type[td_i] != load_buddha_type_1 || bb_bail[td_i] != load_bailout_1 || bb_pps[td_i] != load_path_plot_start_1 || bb_ppe[td_i] != load_path_plot_end_1 || bb_minn[td_i] != load_path_min_iter_1) {
-                bb_type[td_i] = load_buddha_type_1;
+            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
+                bb_type[td_i] = load_bb_type1;
 
-                if (bb_bail[td_i] != load_bailout_1) {
-                    bb_bail[td_i] = load_bailout_1;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail1) {
+                    bb_bail[td_i] = load_bb_bail1;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_1;
-                bb_ppe[td_i] = load_path_plot_end_1;
-                bb_minn[td_i] = load_path_min_iter_1;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps1;
+                bb_ppe[td_i] = load_bb_ppe1;
+                bb_minn[td_i] = load_bb_minn1;
+                reset_R(td_i);
             }
         }
     }
 
-    if (lr_mode == 1 && load_selected_layer == -1) {
-        cm[0] = load_coloring_method_1;
-        cm[1] = load_coloring_method_2;
-        cm[2] = load_coloring_method_3;
-        ct_o[0] = load_color_table_8b_offset_1;
-        ct_o[1] = load_color_table_8b_offset_2;
-        ct_o[2] = load_color_table_8b_offset_3;
+    if (lr_mode == 1 && load_selectedlayer == -1) {
+        cm[0] = load_cm1;
+        cm[1] = load_cm2;
+        cm[2] = load_cm3;
+        ct_o[0] = load_ct_o1;
+        ct_o[1] = load_ct_o2;
+        ct_o[2] = load_ct_o3;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            if (bb_type[td_i] != load_buddha_type_1 || bb_bail[td_i] != load_bailout_1 || bb_pps[td_i] != load_path_plot_start_1 || bb_ppe[td_i] != load_path_plot_end_1 || bb_minn[td_i] != load_path_min_iter_1) {
-                bb_type[td_i] = load_buddha_type_1;
+            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
+                bb_type[td_i] = load_bb_type1;
 
-                if (bb_bail[td_i] != load_bailout_1) {
-                    bb_bail[td_i] = load_bailout_1;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail1) {
+                    bb_bail[td_i] = load_bb_bail1;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_1;
-                bb_ppe[td_i] = load_path_plot_end_1;
-                bb_minn[td_i] = load_path_min_iter_1;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps1;
+                bb_ppe[td_i] = load_bb_ppe1;
+                bb_minn[td_i] = load_bb_minn1;
+                reset_R(td_i);
             }
         }
     }
 
-    if (lr_mode == 2 && load_selected_layer != -1) {
-        cm[load_selected_layer] = load_coloring_method_1;
-        ct_o[load_selected_layer] = load_color_table_8b_offset_1;
+    if (lr_mode == 2 && load_selectedlayer != -1) {
+        cm[load_selectedlayer] = load_cm1;
+        ct_o[load_selectedlayer] = load_ct_o1;
 
-        for (int td_i = load_selected_layer; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_buddha_type_1 || bb_bail[td_i] != load_bailout_1 || bb_pps[td_i] != load_path_plot_start_1 || bb_ppe[td_i] != load_path_plot_end_1 || bb_minn[td_i] != load_path_min_iter_1) {
-                bb_type[td_i] = load_buddha_type_1;
+        for (int td_i = load_selectedlayer; td_i < td_nb; td_i += LR_NB) {
+            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
+                bb_type[td_i] = load_bb_type1;
 
-                if (bb_bail[td_i] != load_bailout_1) {
-                    bb_bail[td_i] = load_bailout_1;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail1) {
+                    bb_bail[td_i] = load_bb_bail1;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_1;
-                bb_ppe[td_i] = load_path_plot_end_1;
-                bb_minn[td_i] = load_path_min_iter_1;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps1;
+                bb_ppe[td_i] = load_bb_ppe1;
+                bb_minn[td_i] = load_bb_minn1;
+                reset_R(td_i);
             }
         }
     }
 
-    if (lr_mode == 2 && load_selected_layer == -1) {
-        cm[0] = load_coloring_method_1;
-        cm[1] = load_coloring_method_2;
-        cm[2] = load_coloring_method_3;
-        ct_o[0] = load_color_table_8b_offset_1;
-        ct_o[1] = load_color_table_8b_offset_2;
-        ct_o[2] = load_color_table_8b_offset_3;
+    if (lr_mode == 2 && load_selectedlayer == -1) {
+        cm[0] = load_cm1;
+        cm[1] = load_cm2;
+        cm[2] = load_cm3;
+        ct_o[0] = load_ct_o1;
+        ct_o[1] = load_ct_o2;
+        ct_o[2] = load_ct_o3;
 
         for (int td_i = 0; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_buddha_type_1 || bb_bail[td_i] != load_bailout_1 || bb_pps[td_i] != load_path_plot_start_1 || bb_ppe[td_i] != load_path_plot_end_1 || bb_minn[td_i] != load_path_min_iter_1) {
-                bb_type[td_i] = load_buddha_type_1;
+            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
+                bb_type[td_i] = load_bb_type1;
 
-                if (bb_bail[td_i] != load_bailout_1) {
-                    bb_bail[td_i] = load_bailout_1;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail1) {
+                    bb_bail[td_i] = load_bb_bail1;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_1;
-                bb_ppe[td_i] = load_path_plot_end_1;
-                bb_minn[td_i] = load_path_min_iter_1;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps1;
+                bb_ppe[td_i] = load_bb_ppe1;
+                bb_minn[td_i] = load_bb_minn1;
+                reset_R(td_i);
             }
         }
 
         for (int td_i = 1; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_buddha_type_2 || bb_bail[td_i] != load_bailout_2 || bb_pps[td_i] != load_path_plot_start_2 || bb_ppe[td_i] != load_path_plot_end_2 || bb_minn[td_i] != load_path_min_iter_2) {
-                bb_type[td_i] = load_buddha_type_2;
+            if (bb_type[td_i] != load_bb_type2 || bb_bail[td_i] != load_bb_bail2 || bb_pps[td_i] != load_bb_pps2 || bb_ppe[td_i] != load_bb_ppe2 || bb_minn[td_i] != load_bb_minn2) {
+                bb_type[td_i] = load_bb_type2;
 
-                if (bb_bail[td_i] != load_bailout_2) {
-                    bb_bail[td_i] = load_bailout_2;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail2) {
+                    bb_bail[td_i] = load_bb_bail2;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_2;
-                bb_ppe[td_i] = load_path_plot_end_2;
-                bb_minn[td_i] = load_path_min_iter_2;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps2;
+                bb_ppe[td_i] = load_bb_ppe2;
+                bb_minn[td_i] = load_bb_minn2;
+                reset_R(td_i);
             }
         }
 
         for (int td_i = 2; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_buddha_type_3 || bb_bail[td_i] != load_bailout_3 || bb_pps[td_i] != load_path_plot_start_3 || bb_ppe[td_i] != load_path_plot_end_3 || bb_minn[td_i] != load_path_min_iter_3) {
-                bb_type[td_i] = load_buddha_type_3;
+            if (bb_type[td_i] != load_bb_type3 || bb_bail[td_i] != load_bb_bail3 || bb_pps[td_i] != load_bb_pps3 || bb_ppe[td_i] != load_bb_ppe3 || bb_minn[td_i] != load_bb_minn3) {
+                bb_type[td_i] = load_bb_type3;
 
-                if (bb_bail[td_i] != load_bailout_3) {
-                    bb_bail[td_i] = load_bailout_3;
-                    realloc_paths(td_i);
+                if (bb_bail[td_i] != load_bb_bail3) {
+                    bb_bail[td_i] = load_bb_bail3;
+                    realloc_P(td_i);
                 }
 
-                bb_pps[td_i] = load_path_plot_start_3;
-                bb_ppe[td_i] = load_path_plot_end_3;
-                bb_minn[td_i] = load_path_min_iter_3;
-                reset_counter_mats(td_i);
+                bb_pps[td_i] = load_bb_pps3;
+                bb_ppe[td_i] = load_bb_ppe3;
+                bb_minn[td_i] = load_bb_minn3;
+                reset_R(td_i);
             }
         }
     }
 
-    if (pause_calculation_threads) {
+    if (pause_calcthreads) {
         td_pause = 0;
         #pragma omp flush(td_pause)
     }
 }
 
-//// 0 pause_calculation_threads : td_pause the calculations during the loading
+//// 0 pause_calcthreads : td_pause the calculations during the loading
 //// 1.0 zoom : zooming of complex plane
-void load_location_and_preset(int pause_calculation_threads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh, int load_layer_mode, int load_selected_layer, int load_buddha_type_1, int load_bailout_1, int load_path_plot_start_1, int load_path_plot_end_1, int load_path_min_iter_1, int load_buddha_type_2, int load_bailout_2, int load_path_plot_start_2, int load_path_plot_end_2, int load_path_min_iter_2, int load_buddha_type_3, int load_bailout_3, int load_path_plot_start_3, int load_path_plot_end_3, int load_path_min_iter_3, int load_color_table_type, int load_coloring_method_1, int load_color_table_8b_offset_1, int load_coloring_method_2, int load_color_table_8b_offset_2, int load_coloring_method_3, int load_color_table_8b_offset_3)
+void load_location_and_preset(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh, int load_lr_mode, int load_selectedlayer, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_ct_o1, int load_cm2, int load_ct_o2, int load_cm3, int load_ct_o3)
 {
-    if (pause_calculation_threads) {
-        pause_calculation_threads_and_wait();
+    if (pause_calcthreads) {
+        pause_calcthreads_and_wait();
     }
 
-    load_bailout_1 = MAX(load_bailout_1, 0);
-    load_bailout_2 = MAX(load_bailout_2, 0);
-    load_bailout_3 = MAX(load_bailout_3, 0);
-    load_path_plot_start_1 = MIN(MAX(load_path_plot_start_1, 0), load_bailout_1);
-    load_path_plot_start_2 = MIN(MAX(load_path_plot_start_2, 0), load_bailout_2);
-    load_path_plot_start_3 = MIN(MAX(load_path_plot_start_3, 0), load_bailout_3);
-    load_path_plot_end_1 = MIN(MAX(load_path_plot_end_1, 0), load_bailout_1);
-    load_path_plot_end_2 = MIN(MAX(load_path_plot_end_2, 0), load_bailout_2);
-    load_path_plot_end_3 = MIN(MAX(load_path_plot_end_3, 0), load_bailout_3);
-    load_path_min_iter_1 = MIN(MAX(load_path_min_iter_1, 0), load_bailout_1);
-    load_path_min_iter_2 = MIN(MAX(load_path_min_iter_2, 0), load_bailout_2);
-    load_path_min_iter_3 = MIN(MAX(load_path_min_iter_3, 0), load_bailout_3);
-    lr_mode = load_layer_mode;
-    ct_type = load_color_table_type;
+    load_bb_bail1 = MAX(load_bb_bail1, 0);
+    load_bb_bail2 = MAX(load_bb_bail2, 0);
+    load_bb_bail3 = MAX(load_bb_bail3, 0);
+    load_bb_pps1 = MIN(MAX(load_bb_pps1, 0), load_bb_bail1);
+    load_bb_pps2 = MIN(MAX(load_bb_pps2, 0), load_bb_bail2);
+    load_bb_pps3 = MIN(MAX(load_bb_pps3, 0), load_bb_bail3);
+    load_bb_ppe1 = MIN(MAX(load_bb_ppe1, 0), load_bb_bail1);
+    load_bb_ppe2 = MIN(MAX(load_bb_ppe2, 0), load_bb_bail2);
+    load_bb_ppe3 = MIN(MAX(load_bb_ppe3, 0), load_bb_bail3);
+    load_bb_minn1 = MIN(MAX(load_bb_minn1, 0), load_bb_bail1);
+    load_bb_minn2 = MIN(MAX(load_bb_minn2, 0), load_bb_bail2);
+    load_bb_minn3 = MIN(MAX(load_bb_minn3, 0), load_bb_bail3);
+    lr_mode = load_lr_mode;
+    ct_type = load_ct_type;
     ct_load(ct_type);
 
     if (lr_mode == 0) {
-        cm[0] = load_coloring_method_1;
-        cm[1] = load_coloring_method_1;
-        cm[2] = load_coloring_method_1;
-        ct_o[0] = load_color_table_8b_offset_1;
-        ct_o[1] = load_color_table_8b_offset_1;
-        ct_o[2] = load_color_table_8b_offset_1;
+        cm[0] = load_cm1;
+        cm[1] = load_cm1;
+        cm[2] = load_cm1;
+        ct_o[0] = load_ct_o1;
+        ct_o[1] = load_ct_o1;
+        ct_o[2] = load_ct_o1;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_buddha_type_1;
+            bb_type[td_i] = load_bb_type1;
 
-            if (bb_bail[td_i] != load_bailout_1) {
-                bb_bail[td_i] = load_bailout_1;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail1) {
+                bb_bail[td_i] = load_bb_bail1;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_1;
-            bb_ppe[td_i] = load_path_plot_end_1;
-            bb_minn[td_i] = load_path_min_iter_1;
+            bb_pps[td_i] = load_bb_pps1;
+            bb_ppe[td_i] = load_bb_ppe1;
+            bb_minn[td_i] = load_bb_minn1;
         }
     }
 
-    if (lr_mode == 1 && load_selected_layer != -1) {
-        cm[load_selected_layer] = load_coloring_method_1;
-        ct_o[load_selected_layer] = load_color_table_8b_offset_1;
+    if (lr_mode == 1 && load_selectedlayer != -1) {
+        cm[load_selectedlayer] = load_cm1;
+        ct_o[load_selectedlayer] = load_ct_o1;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_buddha_type_1;
+            bb_type[td_i] = load_bb_type1;
 
-            if (bb_bail[td_i] != load_bailout_1) {
-                bb_bail[td_i] = load_bailout_1;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail1) {
+                bb_bail[td_i] = load_bb_bail1;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_1;
-            bb_ppe[td_i] = load_path_plot_end_1;
-            bb_minn[td_i] = load_path_min_iter_1;
+            bb_pps[td_i] = load_bb_pps1;
+            bb_ppe[td_i] = load_bb_ppe1;
+            bb_minn[td_i] = load_bb_minn1;
         }
     }
 
-    if (lr_mode == 1 && load_selected_layer == -1) {
-        cm[0] = load_coloring_method_1;
-        cm[1] = load_coloring_method_2;
-        cm[2] = load_coloring_method_3;
-        ct_o[0] = load_color_table_8b_offset_1;
-        ct_o[1] = load_color_table_8b_offset_2;
-        ct_o[2] = load_color_table_8b_offset_3;
+    if (lr_mode == 1 && load_selectedlayer == -1) {
+        cm[0] = load_cm1;
+        cm[1] = load_cm2;
+        cm[2] = load_cm3;
+        ct_o[0] = load_ct_o1;
+        ct_o[1] = load_ct_o2;
+        ct_o[2] = load_ct_o3;
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_buddha_type_1;
+            bb_type[td_i] = load_bb_type1;
 
-            if (bb_bail[td_i] != load_bailout_1) {
-                bb_bail[td_i] = load_bailout_1;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail1) {
+                bb_bail[td_i] = load_bb_bail1;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_1;
-            bb_ppe[td_i] = load_path_plot_end_1;
-            bb_minn[td_i] = load_path_min_iter_1;
+            bb_pps[td_i] = load_bb_pps1;
+            bb_ppe[td_i] = load_bb_ppe1;
+            bb_minn[td_i] = load_bb_minn1;
         }
     }
 
-    if (lr_mode == 2 && load_selected_layer != -1) {
-        cm[load_selected_layer] = load_coloring_method_1;
-        ct_o[load_selected_layer] = load_color_table_8b_offset_1;
+    if (lr_mode == 2 && load_selectedlayer != -1) {
+        cm[load_selectedlayer] = load_cm1;
+        ct_o[load_selectedlayer] = load_ct_o1;
 
-        for (int td_i = load_selected_layer; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_buddha_type_1;
+        for (int td_i = load_selectedlayer; td_i < td_nb; td_i += LR_NB) {
+            bb_type[td_i] = load_bb_type1;
 
-            if (bb_bail[td_i] != load_bailout_1) {
-                bb_bail[td_i] = load_bailout_1;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail1) {
+                bb_bail[td_i] = load_bb_bail1;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_1;
-            bb_ppe[td_i] = load_path_plot_end_1;
-            bb_minn[td_i] = load_path_min_iter_1;
+            bb_pps[td_i] = load_bb_pps1;
+            bb_ppe[td_i] = load_bb_ppe1;
+            bb_minn[td_i] = load_bb_minn1;
         }
     }
 
-    if (lr_mode == 2 && load_selected_layer == -1) {
-        cm[0] = load_coloring_method_1;
-        cm[1] = load_coloring_method_2;
-        cm[2] = load_coloring_method_3;
-        ct_o[0] = load_color_table_8b_offset_1;
-        ct_o[1] = load_color_table_8b_offset_2;
-        ct_o[2] = load_color_table_8b_offset_3;
+    if (lr_mode == 2 && load_selectedlayer == -1) {
+        cm[0] = load_cm1;
+        cm[1] = load_cm2;
+        cm[2] = load_cm3;
+        ct_o[0] = load_ct_o1;
+        ct_o[1] = load_ct_o2;
+        ct_o[2] = load_ct_o3;
 
         for (int td_i = 0; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_buddha_type_1;
+            bb_type[td_i] = load_bb_type1;
 
-            if (bb_bail[td_i] != load_bailout_1) {
-                bb_bail[td_i] = load_bailout_1;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail1) {
+                bb_bail[td_i] = load_bb_bail1;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_1;
-            bb_ppe[td_i] = load_path_plot_end_1;
-            bb_minn[td_i] = load_path_min_iter_1;
+            bb_pps[td_i] = load_bb_pps1;
+            bb_ppe[td_i] = load_bb_ppe1;
+            bb_minn[td_i] = load_bb_minn1;
         }
 
         for (int td_i = 1; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_buddha_type_2;
+            bb_type[td_i] = load_bb_type2;
 
-            if (bb_bail[td_i] != load_bailout_2) {
-                bb_bail[td_i] = load_bailout_2;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail2) {
+                bb_bail[td_i] = load_bb_bail2;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_2;
-            bb_ppe[td_i] = load_path_plot_end_2;
-            bb_minn[td_i] = load_path_min_iter_2;
+            bb_pps[td_i] = load_bb_pps2;
+            bb_ppe[td_i] = load_bb_ppe2;
+            bb_minn[td_i] = load_bb_minn2;
         }
 
         for (int td_i = 2; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_buddha_type_3;
+            bb_type[td_i] = load_bb_type3;
 
-            if (bb_bail[td_i] != load_bailout_3) {
-                bb_bail[td_i] = load_bailout_3;
-                realloc_paths(td_i);
+            if (bb_bail[td_i] != load_bb_bail3) {
+                bb_bail[td_i] = load_bb_bail3;
+                realloc_P(td_i);
             }
 
-            bb_pps[td_i] = load_path_plot_start_3;
-            bb_ppe[td_i] = load_path_plot_end_3;
-            bb_minn[td_i] = load_path_min_iter_3;
+            bb_pps[td_i] = load_bb_pps3;
+            bb_ppe[td_i] = load_bb_ppe3;
+            bb_minn[td_i] = load_bb_minn3;
         }
     }
 
     load_location(0, zoom, x_l, x_u, y_l, y_u, cmw, cmh);
 
-    if (pause_calculation_threads) {
+    if (pause_calcthreads) {
         td_pause = 0;
         #pragma omp flush(td_pause)
     }
@@ -1075,20 +1075,28 @@ int save_parameters()
         return (0);
     }
 
-    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npath_plot_start1 %d\npath_plot_end1 %d\npath_min_iter1 %d\n\nbuddhatype2 %d\nbailout2 %d\npath_plot_start2 %d\npath_plot_end2 %d\npath_min_iter2 %d\n\nbuddhatype3 %d\nbailout3 %d\npath_plot_start3 %d\npath_plot_end3 %d\npath_min_iter3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2], td_nb);
+    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2], td_nb);
     fprintf(parameters_file, "\n");
 
     for (int td_i = 0; td_i < TD_MAX; td_i++) {
         fprintf(parameters_file, "pathsplottedthread%02d %I64u\n", td_i, Pp[td_i]);
     }
 
+    long long unsigned int Ppsum = 0;
+
+    for (int td_i = 0; td_i < td_nb; td_i += 1) {
+        Ppsum += Pp[td_i];
+    }
+
     fprintf(parameters_file, "\n");
-    fprintf(parameters_file, "countermatmax %d\n", Rmax);
+    fprintf(parameters_file, "pathsplottedsum %I64u\n", Ppsum);
+    fprintf(parameters_file, "\n");
+    fprintf(parameters_file, "rendercountmatrixmax %d\n", Rmax);
     fclose(parameters_file);
     return (1);
 }
 
-int load_parameters(int pause_calculation_threads, int load_status, int minmem)
+int load_parameters(int pause_calcthreads, int load_status, int minmem)
 {
     FILE* parameters_file;
 
@@ -1101,32 +1109,32 @@ int load_parameters(int pause_calculation_threads, int load_status, int minmem)
     int rendersizex = 0, rendersizey = 0;
     int windowoffsetx = 0, windowoffsety = 0;
     int layermode = 0;
-    int buddhatype1 = 0, bailout1 = 0, path_plot_start1 = 0, path_plot_end1 = 0, path_min_iter1 = 0;
-    int buddhatype2 = 0, bailout2 = 0, path_plot_start2 = 0, path_plot_end2 = 0, path_min_iter2 = 0;
-    int buddhatype3 = 0, bailout3 = 0, path_plot_start3 = 0, path_plot_end3 = 0, path_min_iter3 = 0;
+    int buddhatype1 = 0, bailout1 = 0, pathplotstart1 = 0, pathplotend1 = 0, pathminninf1 = 0;
+    int buddhatype2 = 0, bailout2 = 0, pathplotstart2 = 0, pathplotend2 = 0, pathminninf2 = 0;
+    int buddhatype3 = 0, bailout3 = 0, pathplotstart3 = 0, pathplotend3 = 0, pathminninf3 = 0;
     int colortabletype = 0;
     int coloringmethod1 = 0, colortableoffset1 = 0;
     int coloringmethod2 = 0, colortableoffset2 = 0;
     int coloringmethod3 = 0, colortableoffset3 = 0;
     int numberofcalculationthreads = 0;
 
-    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npath_plot_start1 %d\npath_plot_end1 %d\npath_min_iter1 %d\n\nbuddhatype2 %d\nbailout2 %d\npath_plot_start2 %d\npath_plot_end2 %d\npath_min_iter2 %d\n\nbuddhatype3 %d\nbailout3 %d\npath_plot_start3 %d\npath_plot_end3 %d\npath_min_iter3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &path_plot_start1, &path_plot_end1, &path_min_iter1, &buddhatype2, &bailout2, &path_plot_start2, &path_plot_end2, &path_min_iter2, &buddhatype3, &bailout3, &path_plot_start3, &path_plot_end3, &path_min_iter3, &colortabletype, &coloringmethod1, &colortableoffset1, &coloringmethod2, &colortableoffset2, &coloringmethod3, &colortableoffset3, &numberofcalculationthreads)) {}
+    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &colortableoffset1, &coloringmethod2, &colortableoffset2, &coloringmethod3, &colortableoffset3, &numberofcalculationthreads)) {}
 
     if (minmem == 0) {
         while (numberofcalculationthreads > td_nb) {
-            increase_number_of_calculation_threads();
+            increase_num_calcthreads();
         }
 
         while (numberofcalculationthreads < td_nb) {
-            decrease_number_of_calculation_threads();
+            decrease_num_calcthreads();
         }
     } else {
         while (3 < td_nb) {
-            decrease_number_of_calculation_threads();
+            decrease_num_calcthreads();
         }
     }
 
-    load_location_and_preset(pause_calculation_threads, zoom, centerx, 0.0, centery, 0.0, rendersizex, rendersizey, layermode, -1, buddhatype1, bailout1, path_plot_start1, path_plot_end1, path_min_iter1, buddhatype2, bailout2, path_plot_start2, path_plot_end2, path_min_iter2, buddhatype3, bailout3, path_plot_start3, path_plot_end3, path_min_iter3, colortabletype, coloringmethod1, colortableoffset1, coloringmethod2, colortableoffset2, coloringmethod3, colortableoffset3);
+    load_location_and_preset(pause_calcthreads, zoom, centerx, 0.0, centery, 0.0, rendersizex, rendersizey, layermode, -1, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, colortableoffset1, coloringmethod2, colortableoffset2, coloringmethod3, colortableoffset3);
     RWox = windowoffsetx;
     Wi_lo = Ri_lo + RWox / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
@@ -1151,7 +1159,7 @@ int load_parameters(int pause_calculation_threads, int load_status, int minmem)
 int save_status()
 {
     reponsive_caption_update("BuddhaBrot-MT: saving status: pausing calculation threads...");
-    pause_calculation_threads_and_wait();
+    pause_calcthreads_and_wait();
 
     for (int Ri = 0; Ri < Rw * Rh; Ri++) {
         unsigned int sum = 0;
@@ -1168,7 +1176,7 @@ int save_status()
     save_parameters();
 
     for (int td_i = 0; td_i < td_nb; td_i += 1) {
-        sprintf(titlebar, "BuddhaBrot-MT: saving status: saving counters of thread %i...", td_i);
+        sprintf(titlebar, "BuddhaBrot-MT: saving status: saving render count matrix of thread %i...", td_i);
         reponsive_caption_update(titlebar);
         sprintf(filename, "BuddhaBrot-MT-status-thread%02i.bin", td_i);
         FILE* status_file;
@@ -1189,11 +1197,11 @@ int save_status()
 int load_status()
 {
     reponsive_caption_update("BuddhaBrot-MT: loading status: pausing calculation threads...");
-    pause_calculation_threads_and_wait();
+    pause_calcthreads_and_wait();
     load_parameters(0, 1, 0);
 
     for (int td_i = 0; td_i < td_nb; td_i += 1) {
-        sprintf(titlebar, "BuddhaBrot-MT: loading status: loading counters of thread %i...", td_i);
+        sprintf(titlebar, "BuddhaBrot-MT: loading status: loading render count matrix of thread %i...", td_i);
         reponsive_caption_update(titlebar);
         sprintf(filename, "BuddhaBrot-MT-status-thread%02i.bin", td_i);
         FILE* status_file;
@@ -1215,12 +1223,12 @@ int load_status()
 int load_status_minmem()
 {
     reponsive_caption_update("BuddhaBrot-MT: loading status: pausing calculation threads...");
-    pause_calculation_threads_and_wait();
-    int original_number_of_calculation_threads = load_parameters(0, 1, 1);
-    unsigned int* tmp_counter_mat = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
+    pause_calcthreads_and_wait();
+    int original_num_calcthreads = load_parameters(0, 1, 1);
+    unsigned int* tmp_R = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
 
     for (int td_i = 0; td_i < 3; td_i++) {
-        sprintf(titlebar, "BuddhaBrot-MT: loading status: loading counters of thread %i...", td_i);
+        sprintf(titlebar, "BuddhaBrot-MT: loading status: loading render count matrix of thread %i...", td_i);
         reponsive_caption_update(titlebar);
         sprintf(filename, "BuddhaBrot-MT-status-thread%02i.bin", td_i);
         FILE* status_file;
@@ -1234,8 +1242,8 @@ int load_status_minmem()
         fclose(status_file);
     }
 
-    for (int td_i = 3; td_i < original_number_of_calculation_threads; td_i++) {
-        sprintf(titlebar, "BuddhaBrot-MT: loading status: loading counters of thread %i...", td_i);
+    for (int td_i = 3; td_i < original_num_calcthreads; td_i++) {
+        sprintf(titlebar, "BuddhaBrot-MT: loading status: loading render count matrix of thread %i...", td_i);
         reponsive_caption_update(titlebar);
         sprintf(filename, "BuddhaBrot-MT-status-thread%02i.bin", td_i);
         FILE* status_file;
@@ -1244,10 +1252,10 @@ int load_status_minmem()
             return (0);
         }
 
-        if (fread(tmp_counter_mat, sizeof(unsigned int), Rw * Rh, status_file)) {}
+        if (fread(tmp_R, sizeof(unsigned int), Rw * Rh, status_file)) {}
 
         for (int Ri = 0; Ri < Rw * Rh; Ri++) {
-            R[td_i % 3][Ri] += tmp_counter_mat[Ri];
+            R[td_i % 3][Ri] += tmp_R[Ri];
         }
 
         Pp[td_i % 3] += Pp[td_i];
@@ -1255,7 +1263,7 @@ int load_status_minmem()
         fclose(status_file);
     }
 
-    free(tmp_counter_mat);
+    free(tmp_R);
     td_pause = 0;
     #pragma omp flush(td_pause)
     return (1);
@@ -1264,7 +1272,7 @@ int load_status_minmem()
 void writeRtoB(const char* filename)
 {
     reponsive_caption_update("BuddhaBrot-MT: write to 8-bit png: pausing calculation threads...");
-    pause_calculation_threads_and_wait();
+    pause_calcthreads_and_wait();
 
     if (lr_mode == 0) {
         Rlrmax[0] = 0;
@@ -1666,7 +1674,7 @@ void writeRtoB(const char* filename)
 void writeRtiletoB(const char* filename, int local_png_offset_x, int local_png_offset_y, int local_png_width, int local_png_height)
 {
     reponsive_caption_update("BuddhaBrot-MT: write to 8-bit png: pausing calculation threads...");
-    pause_calculation_threads_and_wait();
+    pause_calcthreads_and_wait();
 
     if (lr_mode == 0) {
         Rlrmax[0] = 0;
@@ -2038,12 +2046,12 @@ void sdl_message_check()
 
         //// increase threads
         if (sdl_event.key.keysym.sym == SDLK_F11 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            increase_number_of_calculation_threads();
+            increase_num_calcthreads();
         }
 
         //// decrease threads
         if (sdl_event.key.keysym.sym == SDLK_F11 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            decrease_number_of_calculation_threads();
+            decrease_num_calcthreads();
         }
 
         //// set fps at 1 frame per second
@@ -2744,22 +2752,22 @@ void sdl_message_check()
 
         //// saving window to one png
         if (sdl_event.key.keysym.sym == SDLK_BACKSPACE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            long long unsigned int total_paths_plotted = 0;
+            long long unsigned int Ppsum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                total_paths_plotted += Pp[td_i];
+                Ppsum += Pp[td_i];
             }
 
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
             }
 
             writeRtiletoB(filename, RWox, RWoy, Ww, Wh);
@@ -2767,22 +2775,22 @@ void sdl_message_check()
 
         //// saving render to multiple small pngs
         if (sdl_event.key.keysym.sym == SDLK_BACKSLASH && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            long long unsigned int total_paths_plotted = 0;
+            long long unsigned int Ppsum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                total_paths_plotted += Pp[td_i];
+                Ppsum += Pp[td_i];
             }
 
             if (lr_mode == 0) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
             sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -2798,22 +2806,22 @@ void sdl_message_check()
 
         //// saving render to one big png
         if (sdl_event.key.keysym.sym == SDLK_RETURN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            long long unsigned int total_paths_plotted = 0;
+            long long unsigned int Ppsum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                total_paths_plotted += Pp[td_i];
+                Ppsum += Pp[td_i];
             }
 
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
             writeRtoB(filename);
@@ -2853,22 +2861,22 @@ void visualisation_thread()
 
             if (autowriteWtoB && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
                 t_lastB = SDL_GetTicks();
-                long long unsigned int total_paths_plotted = 0;
+                long long unsigned int Ppsum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    total_paths_plotted += Pp[td_i];
+                    Ppsum += Pp[td_i];
                 }
 
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
                 }
 
                 writeRtiletoB(filename, RWox, RWoy, Ww, Wh);
@@ -2876,22 +2884,22 @@ void visualisation_thread()
 
             if (autowriteRtoBtiled && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
                 t_lastB = SDL_GetTicks();
-                long long unsigned int total_paths_plotted = 0;
+                long long unsigned int Ppsum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    total_paths_plotted += Pp[td_i];
+                    Ppsum += Pp[td_i];
                 }
 
                 if (lr_mode == 0) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
                 sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -2907,22 +2915,22 @@ void visualisation_thread()
 
             if (autowriteRtoB && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
                 t_lastB = SDL_GetTicks();
-                long long unsigned int total_paths_plotted = 0;
+                long long unsigned int Ppsum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    total_paths_plotted += Pp[td_i];
+                    Ppsum += Pp[td_i];
                 }
 
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)total_paths_plotted);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
                 writeRtoB(filename);
@@ -3228,13 +3236,13 @@ void visualisation_thread()
                 }
             }
 
-            long long unsigned int total_paths_plotted = 0;
+            long long unsigned int Ppsum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                total_paths_plotted += Pp[td_i];
+                Ppsum += Pp[td_i];
             }
 
-            sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)total_paths_plotted);
+            sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)Ppsum);
             SDL_SetWindowTitle(sdl_window, titlebar);
             SDL_UpdateTexture(sdl_texture, NULL, sdl_surface->pixels, Ww * sizeof(Uint32));
             SDL_RenderClear(sdl_renderer);
