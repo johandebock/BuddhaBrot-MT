@@ -32,12 +32,15 @@ pathminninf3 0
 colortabletype 1
 
 coloringmethod1 0
+oloringmethodlog1 5
 colortableoffset1 0
 
 coloringmethod2 0
+oloringmethodlog2 5
 colortableoffset2 0
 
 coloringmethod3 0
+oloringmethodlog3 5
 colortableoffset3 0
 
 numberofcalculationthreads 9

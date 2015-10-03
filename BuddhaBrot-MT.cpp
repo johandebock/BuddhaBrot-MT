@@ -164,7 +164,7 @@ int Bh = 1000; // bitmap height
 //// log : if count >= cm_log ? count = cm_log + log(count - cm_log + 1) : count = count
 int cm[LR_NB]; // coloring method , per layer
 #define CM_NB 4 // number of coloring methods
-unsigned int cm_log[LR_NB] = {5, 5, 5}; // logarithmic when >= cm_log
+unsigned int cm_log[LR_NB]; // logarithmic when >= cm_log
 int cm0n[LR_NB]; // normalization value for coloring method 0 2 = number of filled bins in histogram = number of unique values in render
 int cm1n[LR_NB]; // normalization value for coloring method 1 3 = (number of pixels in render - number of 0 pixels in render)
 
@@ -486,186 +486,53 @@ void load_location(int pause_calcthreads, double zoom, double x_l, double x_u, d
     }
 }
 
-void load_preset(int pause_calcthreads, int load_lr_mode, int load_selectedlayer, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_ct_o1, int load_cm2, int load_ct_o2, int load_cm3, int load_ct_o3)
+void load_bb_param(int load_selectedlayer, int load_bb_type, int load_bb_bail, int load_bb_pps, int load_bb_ppe, int load_bb_minn)
 {
-    if (pause_calcthreads) {
-        pause_calcthreads_and_wait();
-    }
+    pause_calcthreads_and_wait();
+    load_bb_bail = MAX(load_bb_bail, 0);
+    load_bb_pps = MIN(MAX(load_bb_pps, 0), load_bb_bail);
+    load_bb_ppe = MIN(MAX(load_bb_ppe, 0), load_bb_bail);
+    load_bb_minn = MIN(MAX(load_bb_minn, 0), load_bb_bail);
 
-    load_bb_bail1 = MAX(load_bb_bail1, 0);
-    load_bb_bail2 = MAX(load_bb_bail2, 0);
-    load_bb_bail3 = MAX(load_bb_bail3, 0);
-    load_bb_pps1 = MIN(MAX(load_bb_pps1, 0), load_bb_bail1);
-    load_bb_pps2 = MIN(MAX(load_bb_pps2, 0), load_bb_bail2);
-    load_bb_pps3 = MIN(MAX(load_bb_pps3, 0), load_bb_bail3);
-    load_bb_ppe1 = MIN(MAX(load_bb_ppe1, 0), load_bb_bail1);
-    load_bb_ppe2 = MIN(MAX(load_bb_ppe2, 0), load_bb_bail2);
-    load_bb_ppe3 = MIN(MAX(load_bb_ppe3, 0), load_bb_bail3);
-    load_bb_minn1 = MIN(MAX(load_bb_minn1, 0), load_bb_bail1);
-    load_bb_minn2 = MIN(MAX(load_bb_minn2, 0), load_bb_bail2);
-    load_bb_minn3 = MIN(MAX(load_bb_minn3, 0), load_bb_bail3);
-    lr_mode = load_lr_mode;
-    ct_type = load_ct_type;
-    ct_load(ct_type);
-
-    if (lr_mode == 0) {
-        cm[0] = load_cm1;
-        cm[1] = load_cm1;
-        cm[2] = load_cm1;
-        ct_o[0] = load_ct_o1;
-        ct_o[1] = load_ct_o1;
-        ct_o[2] = load_ct_o1;
-
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
-                bb_type[td_i] = load_bb_type1;
-
-                if (bb_bail[td_i] != load_bb_bail1) {
-                    bb_bail[td_i] = load_bb_bail1;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps1;
-                bb_ppe[td_i] = load_bb_ppe1;
-                bb_minn[td_i] = load_bb_minn1;
-                reset_R(td_i);
-            }
-        }
-    }
-
-    if (lr_mode == 1 && load_selectedlayer != -1) {
-        cm[load_selectedlayer] = load_cm1;
-        ct_o[load_selectedlayer] = load_ct_o1;
-
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
-                bb_type[td_i] = load_bb_type1;
-
-                if (bb_bail[td_i] != load_bb_bail1) {
-                    bb_bail[td_i] = load_bb_bail1;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps1;
-                bb_ppe[td_i] = load_bb_ppe1;
-                bb_minn[td_i] = load_bb_minn1;
-                reset_R(td_i);
-            }
-        }
-    }
-
-    if (lr_mode == 1 && load_selectedlayer == -1) {
-        cm[0] = load_cm1;
-        cm[1] = load_cm2;
-        cm[2] = load_cm3;
-        ct_o[0] = load_ct_o1;
-        ct_o[1] = load_ct_o2;
-        ct_o[2] = load_ct_o3;
-
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
-                bb_type[td_i] = load_bb_type1;
-
-                if (bb_bail[td_i] != load_bb_bail1) {
-                    bb_bail[td_i] = load_bb_bail1;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps1;
-                bb_ppe[td_i] = load_bb_ppe1;
-                bb_minn[td_i] = load_bb_minn1;
-                reset_R(td_i);
-            }
-        }
-    }
-
-    if (lr_mode == 2 && load_selectedlayer != -1) {
-        cm[load_selectedlayer] = load_cm1;
-        ct_o[load_selectedlayer] = load_ct_o1;
-
+    if (load_selectedlayer != -1) {
         for (int td_i = load_selectedlayer; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
-                bb_type[td_i] = load_bb_type1;
+            bb_type[td_i] = load_bb_type;
 
-                if (bb_bail[td_i] != load_bb_bail1) {
-                    bb_bail[td_i] = load_bb_bail1;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps1;
-                bb_ppe[td_i] = load_bb_ppe1;
-                bb_minn[td_i] = load_bb_minn1;
-                reset_R(td_i);
+            if (bb_bail[td_i] != load_bb_bail) {
+                bb_bail[td_i] = load_bb_bail;
+                realloc_P(td_i);
             }
+
+            bb_pps[td_i] = load_bb_pps;
+            bb_ppe[td_i] = load_bb_ppe;
+            bb_minn[td_i] = load_bb_minn;
+            reset_R(td_i);
         }
     }
 
-    if (lr_mode == 2 && load_selectedlayer == -1) {
-        cm[0] = load_cm1;
-        cm[1] = load_cm2;
-        cm[2] = load_cm3;
-        ct_o[0] = load_ct_o1;
-        ct_o[1] = load_ct_o2;
-        ct_o[2] = load_ct_o3;
+    if (load_selectedlayer == -1) {
+        for (int td_i = 0; td_i < td_nb; td_i += 1) {
+            bb_type[td_i] = load_bb_type;
 
-        for (int td_i = 0; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_bb_type1 || bb_bail[td_i] != load_bb_bail1 || bb_pps[td_i] != load_bb_pps1 || bb_ppe[td_i] != load_bb_ppe1 || bb_minn[td_i] != load_bb_minn1) {
-                bb_type[td_i] = load_bb_type1;
-
-                if (bb_bail[td_i] != load_bb_bail1) {
-                    bb_bail[td_i] = load_bb_bail1;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps1;
-                bb_ppe[td_i] = load_bb_ppe1;
-                bb_minn[td_i] = load_bb_minn1;
-                reset_R(td_i);
+            if (bb_bail[td_i] != load_bb_bail) {
+                bb_bail[td_i] = load_bb_bail;
+                realloc_P(td_i);
             }
-        }
 
-        for (int td_i = 1; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_bb_type2 || bb_bail[td_i] != load_bb_bail2 || bb_pps[td_i] != load_bb_pps2 || bb_ppe[td_i] != load_bb_ppe2 || bb_minn[td_i] != load_bb_minn2) {
-                bb_type[td_i] = load_bb_type2;
-
-                if (bb_bail[td_i] != load_bb_bail2) {
-                    bb_bail[td_i] = load_bb_bail2;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps2;
-                bb_ppe[td_i] = load_bb_ppe2;
-                bb_minn[td_i] = load_bb_minn2;
-                reset_R(td_i);
-            }
-        }
-
-        for (int td_i = 2; td_i < td_nb; td_i += LR_NB) {
-            if (bb_type[td_i] != load_bb_type3 || bb_bail[td_i] != load_bb_bail3 || bb_pps[td_i] != load_bb_pps3 || bb_ppe[td_i] != load_bb_ppe3 || bb_minn[td_i] != load_bb_minn3) {
-                bb_type[td_i] = load_bb_type3;
-
-                if (bb_bail[td_i] != load_bb_bail3) {
-                    bb_bail[td_i] = load_bb_bail3;
-                    realloc_P(td_i);
-                }
-
-                bb_pps[td_i] = load_bb_pps3;
-                bb_ppe[td_i] = load_bb_ppe3;
-                bb_minn[td_i] = load_bb_minn3;
-                reset_R(td_i);
-            }
+            bb_pps[td_i] = load_bb_pps;
+            bb_ppe[td_i] = load_bb_ppe;
+            bb_minn[td_i] = load_bb_minn;
+            reset_R(td_i);
         }
     }
 
-    if (pause_calcthreads) {
-        td_pause = 0;
-        #pragma omp flush(td_pause)
-    }
+    td_pause = 0;
+    #pragma omp flush(td_pause)
 }
 
 //// 0 pause_calcthreads : td_pause the calculations during the loading
 //// 1.0 zoom : zooming of complex plane
-void load_location_and_preset(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh, int load_lr_mode, int load_selectedlayer, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_ct_o1, int load_cm2, int load_ct_o2, int load_cm3, int load_ct_o3)
+void load_location_bb_color_param(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh, int load_lr_mode, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_cm_log1, int load_ct_o1, int load_cm2, int load_cm_log2, int load_ct_o2, int load_cm3, int load_cm_log3, int load_ct_o3)
 {
     if (pause_calcthreads) {
         pause_calcthreads_and_wait();
@@ -686,133 +553,53 @@ void load_location_and_preset(int pause_calcthreads, double zoom, double x_l, do
     lr_mode = load_lr_mode;
     ct_type = load_ct_type;
     ct_load(ct_type);
+    cm[0] = load_cm1;
+    cm[1] = load_cm2;
+    cm[2] = load_cm3;
+    cm_log[0] = load_cm_log1;
+    cm_log[1] = load_cm_log2;
+    cm_log[2] = load_cm_log3;
+    ct_o[0] = load_ct_o1;
+    ct_o[1] = load_ct_o2;
+    ct_o[2] = load_ct_o3;
 
-    if (lr_mode == 0) {
-        cm[0] = load_cm1;
-        cm[1] = load_cm1;
-        cm[2] = load_cm1;
-        ct_o[0] = load_ct_o1;
-        ct_o[1] = load_ct_o1;
-        ct_o[2] = load_ct_o1;
+    for (int td_i = 0; td_i < td_nb; td_i += LR_NB) {
+        bb_type[td_i] = load_bb_type1;
 
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_bb_type1;
-
-            if (bb_bail[td_i] != load_bb_bail1) {
-                bb_bail[td_i] = load_bb_bail1;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps1;
-            bb_ppe[td_i] = load_bb_ppe1;
-            bb_minn[td_i] = load_bb_minn1;
+        if (bb_bail[td_i] != load_bb_bail1) {
+            bb_bail[td_i] = load_bb_bail1;
+            realloc_P(td_i);
         }
+
+        bb_pps[td_i] = load_bb_pps1;
+        bb_ppe[td_i] = load_bb_ppe1;
+        bb_minn[td_i] = load_bb_minn1;
     }
 
-    if (lr_mode == 1 && load_selectedlayer != -1) {
-        cm[load_selectedlayer] = load_cm1;
-        ct_o[load_selectedlayer] = load_ct_o1;
+    for (int td_i = 1; td_i < td_nb; td_i += LR_NB) {
+        bb_type[td_i] = load_bb_type2;
 
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_bb_type1;
-
-            if (bb_bail[td_i] != load_bb_bail1) {
-                bb_bail[td_i] = load_bb_bail1;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps1;
-            bb_ppe[td_i] = load_bb_ppe1;
-            bb_minn[td_i] = load_bb_minn1;
+        if (bb_bail[td_i] != load_bb_bail2) {
+            bb_bail[td_i] = load_bb_bail2;
+            realloc_P(td_i);
         }
+
+        bb_pps[td_i] = load_bb_pps2;
+        bb_ppe[td_i] = load_bb_ppe2;
+        bb_minn[td_i] = load_bb_minn2;
     }
 
-    if (lr_mode == 1 && load_selectedlayer == -1) {
-        cm[0] = load_cm1;
-        cm[1] = load_cm2;
-        cm[2] = load_cm3;
-        ct_o[0] = load_ct_o1;
-        ct_o[1] = load_ct_o2;
-        ct_o[2] = load_ct_o3;
+    for (int td_i = 2; td_i < td_nb; td_i += LR_NB) {
+        bb_type[td_i] = load_bb_type3;
 
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_bb_type1;
-
-            if (bb_bail[td_i] != load_bb_bail1) {
-                bb_bail[td_i] = load_bb_bail1;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps1;
-            bb_ppe[td_i] = load_bb_ppe1;
-            bb_minn[td_i] = load_bb_minn1;
-        }
-    }
-
-    if (lr_mode == 2 && load_selectedlayer != -1) {
-        cm[load_selectedlayer] = load_cm1;
-        ct_o[load_selectedlayer] = load_ct_o1;
-
-        for (int td_i = load_selectedlayer; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_bb_type1;
-
-            if (bb_bail[td_i] != load_bb_bail1) {
-                bb_bail[td_i] = load_bb_bail1;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps1;
-            bb_ppe[td_i] = load_bb_ppe1;
-            bb_minn[td_i] = load_bb_minn1;
-        }
-    }
-
-    if (lr_mode == 2 && load_selectedlayer == -1) {
-        cm[0] = load_cm1;
-        cm[1] = load_cm2;
-        cm[2] = load_cm3;
-        ct_o[0] = load_ct_o1;
-        ct_o[1] = load_ct_o2;
-        ct_o[2] = load_ct_o3;
-
-        for (int td_i = 0; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_bb_type1;
-
-            if (bb_bail[td_i] != load_bb_bail1) {
-                bb_bail[td_i] = load_bb_bail1;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps1;
-            bb_ppe[td_i] = load_bb_ppe1;
-            bb_minn[td_i] = load_bb_minn1;
+        if (bb_bail[td_i] != load_bb_bail3) {
+            bb_bail[td_i] = load_bb_bail3;
+            realloc_P(td_i);
         }
 
-        for (int td_i = 1; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_bb_type2;
-
-            if (bb_bail[td_i] != load_bb_bail2) {
-                bb_bail[td_i] = load_bb_bail2;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps2;
-            bb_ppe[td_i] = load_bb_ppe2;
-            bb_minn[td_i] = load_bb_minn2;
-        }
-
-        for (int td_i = 2; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_bb_type3;
-
-            if (bb_bail[td_i] != load_bb_bail3) {
-                bb_bail[td_i] = load_bb_bail3;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps3;
-            bb_ppe[td_i] = load_bb_ppe3;
-            bb_minn[td_i] = load_bb_minn3;
-        }
+        bb_pps[td_i] = load_bb_pps3;
+        bb_ppe[td_i] = load_bb_ppe3;
+        bb_minn[td_i] = load_bb_minn3;
     }
 
     load_location(0, zoom, x_l, x_u, y_l, y_u, cmw, cmh);
@@ -1067,7 +854,7 @@ void calculation_thread(int td_i)
     printf("thread %i end\n", td_i);
 }
 
-int save_parameters()
+int save_param_file()
 {
     FILE* parameters_file;
 
@@ -1075,7 +862,7 @@ int save_parameters()
         return (0);
     }
 
-    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2], td_nb);
+    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\noloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\noloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\noloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb);
     fprintf(parameters_file, "\n");
 
     for (int td_i = 0; td_i < TD_MAX; td_i++) {
@@ -1096,7 +883,7 @@ int save_parameters()
     return (1);
 }
 
-int load_parameters(int pause_calcthreads, int load_status, int minmem)
+int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
 {
     FILE* parameters_file;
 
@@ -1113,12 +900,12 @@ int load_parameters(int pause_calcthreads, int load_status, int minmem)
     int buddhatype2 = 0, bailout2 = 0, pathplotstart2 = 0, pathplotend2 = 0, pathminninf2 = 0;
     int buddhatype3 = 0, bailout3 = 0, pathplotstart3 = 0, pathplotend3 = 0, pathminninf3 = 0;
     int colortabletype = 0;
-    int coloringmethod1 = 0, colortableoffset1 = 0;
-    int coloringmethod2 = 0, colortableoffset2 = 0;
-    int coloringmethod3 = 0, colortableoffset3 = 0;
+    int coloringmethod1 = 0, coloringmethodlog1 = 0, colortableoffset1 = 0;
+    int coloringmethod2 = 0, coloringmethodlog2 = 0, colortableoffset2 = 0;
+    int coloringmethod3 = 0, coloringmethodlog3 = 0, colortableoffset3 = 0;
     int numberofcalculationthreads = 0;
 
-    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &colortableoffset1, &coloringmethod2, &colortableoffset2, &coloringmethod3, &colortableoffset3, &numberofcalculationthreads)) {}
+    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\noloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\noloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\noloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &coloringmethodlog1, &colortableoffset1, &coloringmethod2, &coloringmethodlog2, &colortableoffset2, &coloringmethod3, &coloringmethodlog3, &colortableoffset3, &numberofcalculationthreads)) {}
 
     if (minmem == 0) {
         while (numberofcalculationthreads > td_nb) {
@@ -1134,7 +921,7 @@ int load_parameters(int pause_calcthreads, int load_status, int minmem)
         }
     }
 
-    load_location_and_preset(pause_calcthreads, zoom, centerx, 0.0, centery, 0.0, rendersizex, rendersizey, layermode, -1, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, colortableoffset1, coloringmethod2, colortableoffset2, coloringmethod3, colortableoffset3);
+    load_location_bb_color_param(pause_calcthreads, zoom, centerx, 0.0, centery, 0.0, rendersizex, rendersizey, layermode, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, coloringmethodlog1, colortableoffset1, coloringmethod2, coloringmethodlog2, colortableoffset2, coloringmethod3, coloringmethodlog3, colortableoffset3);
     RWox = windowoffsetx;
     Wi_lo = Ri_lo + RWox / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
@@ -1142,7 +929,7 @@ int load_parameters(int pause_calcthreads, int load_status, int minmem)
     Wr_lo = Rr_lo + RWoy / Rhdivr;
     Wr_up = Wr_lo + Wh / Rhdivr;
 
-    if (load_status == 1) {
+    if (load_status_files == 1) {
         if (fscanf(parameters_file, "\n")) {}
 
         for (int td_i = 0; td_i < TD_MAX; td_i++) {
@@ -1156,7 +943,7 @@ int load_parameters(int pause_calcthreads, int load_status, int minmem)
     return (numberofcalculationthreads);
 }
 
-int save_status()
+int save_status_files()
 {
     reponsive_caption_update("BuddhaBrot-MT: saving status: pausing calculation threads...");
     pause_calcthreads_and_wait();
@@ -1173,7 +960,7 @@ int save_status()
         }
     }
 
-    save_parameters();
+    save_param_file();
 
     for (int td_i = 0; td_i < td_nb; td_i += 1) {
         sprintf(titlebar, "BuddhaBrot-MT: saving status: saving render count matrix of thread %i...", td_i);
@@ -1194,11 +981,11 @@ int save_status()
     return (1);
 }
 
-int load_status()
+int load_status_files()
 {
     reponsive_caption_update("BuddhaBrot-MT: loading status: pausing calculation threads...");
     pause_calcthreads_and_wait();
-    load_parameters(0, 1, 0);
+    load_param_file(0, 1, 0);
 
     for (int td_i = 0; td_i < td_nb; td_i += 1) {
         sprintf(titlebar, "BuddhaBrot-MT: loading status: loading render count matrix of thread %i...", td_i);
@@ -1220,11 +1007,11 @@ int load_status()
     return (1);
 }
 
-int load_status_minmem()
+int load_status_files_minmem()
 {
     reponsive_caption_update("BuddhaBrot-MT: loading status: pausing calculation threads...");
     pause_calcthreads_and_wait();
-    int original_num_calcthreads = load_parameters(0, 1, 1);
+    int original_num_calcthreads = load_param_file(0, 1, 1);
     unsigned int* tmp_R = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
 
     for (int td_i = 0; td_i < 3; td_i++) {
@@ -2018,24 +1805,24 @@ void sdl_message_check()
     if (sdl_event.type == SDL_KEYDOWN) {
         //// saving status
         if (sdl_event.key.keysym.sym == SDLK_F9 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            save_status();
+            save_status_files();
         }
 
         if (sdl_event.key.keysym.sym == SDLK_F9 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            save_parameters();
+            save_param_file();
         }
 
         //// loading status
         if (sdl_event.key.keysym.sym == SDLK_F10 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_status();
+            load_status_files();
         }
 
         if (sdl_event.key.keysym.sym == SDLK_F10 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_parameters(1, 0, 0);
+            load_param_file(1, 0, 0);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_F10 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_status_minmem();
+            load_status_files_minmem();
         }
 
         //// td_pause
@@ -2083,279 +1870,279 @@ void sdl_message_check()
 
         //// change bb_type layer 123
         if (sdl_event.key.keysym.sym == SDLK_BACKQUOTE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, (bb_type[0] + 1) % BB_TYPE_NB, bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], (bb_type[1] + 1) % BB_TYPE_NB, bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], (bb_type[2] + 1) % BB_TYPE_NB, bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, (bb_type[0] + 1) % BB_TYPE_NB, bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         //// change bb_bail layer 123
         if (sdl_event.key.keysym.sym == SDLK_1 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0] + 1, bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1] + 1, bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2] + 1, bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0] + 1, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_1 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0] * 10, bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1] * 10, bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2] * 10, bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0] * 10, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_1 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0] - 1, bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1] - 1, bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2] - 1, bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0] - 1, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_1 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0] / 10, bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1] / 10, bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2] / 10, bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0] / 10, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         //// change bb_bail layer 1
         if (sdl_event.key.keysym.sym == SDLK_q && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0] + 1, bb_pps[0], bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0] + 1, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_q && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0] * 10, bb_pps[0], bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0] * 10, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_q && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0] - 1, bb_pps[0], bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0] - 1, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_q && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0] / 10, bb_pps[0], bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0] / 10, bb_pps[0], bb_ppe[0], bb_minn[0]);
         }
 
         //// change bb_bail layer 2
         if (sdl_event.key.keysym.sym == SDLK_a && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1] + 1, bb_pps[1], bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1] + 1, bb_pps[1], bb_ppe[1], bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_a && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1] * 10, bb_pps[1], bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1] * 10, bb_pps[1], bb_ppe[1], bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_a && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1] - 1, bb_pps[1], bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1] - 1, bb_pps[1], bb_ppe[1], bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_a && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1] / 10, bb_pps[1], bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1] / 10, bb_pps[1], bb_ppe[1], bb_minn[1]);
         }
 
         //// change bb_bail layer 3
         if (sdl_event.key.keysym.sym == SDLK_z && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2] + 1, bb_pps[2], bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2] + 1, bb_pps[2], bb_ppe[2], bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_z && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2] * 10, bb_pps[2], bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2] * 10, bb_pps[2], bb_ppe[2], bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_z && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2] - 1, bb_pps[2], bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2] - 1, bb_pps[2], bb_ppe[2], bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_z && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2] / 10, bb_pps[2], bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2] / 10, bb_pps[2], bb_ppe[2], bb_minn[2]);
         }
 
         //// change bb_pps layer 123
         if (sdl_event.key.keysym.sym == SDLK_2 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0] + 1, bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1] + 1, bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2] + 1, bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0] + 1, bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_2 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0] * 10, bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1] * 10, bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2] * 10, bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0] * 10, bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_2 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0] - 1, bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1] - 1, bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2] - 1, bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0] - 1, bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_2 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0] / 10, bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1] / 10, bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2] / 10, bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0] / 10, bb_ppe[0], bb_minn[0]);
         }
 
         //// change bb_pps layer 1
         if (sdl_event.key.keysym.sym == SDLK_w && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0] + 1, bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0] + 1, bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_w && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0] * 10, bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0] * 10, bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_w && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0] - 1, bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0] - 1, bb_ppe[0], bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_w && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0] / 10, bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0] / 10, bb_ppe[0], bb_minn[0]);
         }
 
         //// change bb_pps layer 2
         if (sdl_event.key.keysym.sym == SDLK_s && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1] + 1, bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1] + 1, bb_ppe[1], bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_s && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1] * 10, bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1] * 10, bb_ppe[1], bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_s && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1] - 1, bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1] - 1, bb_ppe[1], bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_s && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1] / 10, bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1] / 10, bb_ppe[1], bb_minn[1]);
         }
 
         //// change bb_pps layer 3
         if (sdl_event.key.keysym.sym == SDLK_x && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2] + 1, bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2] + 1, bb_ppe[2], bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_x && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2] * 10, bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2] * 10, bb_ppe[2], bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_x && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2] - 1, bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2] - 1, bb_ppe[2], bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_x && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2] / 10, bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2] / 10, bb_ppe[2], bb_minn[2]);
         }
 
         //// change bb_ppe layer 123
         if (sdl_event.key.keysym.sym == SDLK_3 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] + 1, bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] + 1, bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] + 1, bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] + 1, bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_3 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] * 10, bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] * 10, bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] * 10, bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] * 10, bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_3 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] - 1, bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] - 1, bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] - 1, bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] - 1, bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_3 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] / 10, bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] / 10, bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] / 10, bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] / 10, bb_minn[0]);
         }
 
         //// change bb_ppe layer 1
         if (sdl_event.key.keysym.sym == SDLK_e && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] + 1, bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] + 1, bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_e && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] * 10, bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] * 10, bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_e && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] - 1, bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] - 1, bb_minn[0]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_e && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] / 10, bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] / 10, bb_minn[0]);
         }
 
         //// change bb_ppe layer 2
         if (sdl_event.key.keysym.sym == SDLK_d && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] + 1, bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] + 1, bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_d && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] * 10, bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] * 10, bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_d && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] - 1, bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] - 1, bb_minn[1]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_d && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] / 10, bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] / 10, bb_minn[1]);
         }
 
         //// change bb_ppe layer 3
         if (sdl_event.key.keysym.sym == SDLK_c && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] + 1, bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] + 1, bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_c && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] * 10, bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] * 10, bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_c && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] - 1, bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] - 1, bb_minn[2]);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_c && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] / 10, bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] / 10, bb_minn[2]);
         }
 
         //// change bb_minn layer 123
         if (sdl_event.key.keysym.sym == SDLK_4 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] + 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] + 1, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] + 1, ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] + 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_4 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] * 10, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] * 10, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] * 10, ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] * 10);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_4 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] - 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] - 1, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] - 1, ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] - 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_4 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] / 10, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] / 10, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10, ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
+            load_bb_param(-1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] / 10);
         }
 
         //// change bb_minn layer 1
         if (sdl_event.key.keysym.sym == SDLK_r && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] + 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_r && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] * 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] * 10);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_r && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] - 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] - 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_r && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] / 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
+            load_bb_param(0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] / 10);
         }
 
         //// change bb_minn layer 2
         if (sdl_event.key.keysym.sym == SDLK_f && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] + 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_f && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] * 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] * 10);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_f && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] - 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] - 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_f && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] , bb_minn[1] / 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
+            load_bb_param(1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] , bb_minn[1] / 10);
         }
 
         //// change bb_minn layer 3
         if (sdl_event.key.keysym.sym == SDLK_v && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] + 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_v && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] * 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] * 10);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_v && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] - 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] - 1);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_v && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
+            load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10);
         }
 
         //// change cm layer 123
@@ -3256,7 +3043,7 @@ int main(int argc, char* argv[])
         td_nb = MIN(ceil((double)td_vc_nb / 3) * 3, TD_MAX);
     }
 
-    load_location_and_preset(0, 1.0, 0.0, 0.0, 0.0, 0.0, 1000, 1000, 0, -1, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0);
+    load_location_bb_color_param(0, 1.0, 0.0, 0.0, 0.0, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 1, 0, 5, 0, 0, 5, 0, 0, 5, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));
