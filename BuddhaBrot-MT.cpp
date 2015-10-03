@@ -2070,23 +2070,23 @@ void sdl_message_check()
         }
 
         //// change lr_mode
-        if (sdl_event.key.keysym.sym == SDLK_TAB && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_F1 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             lr_mode = (lr_mode + 1) % LR_MODE_NB;
             recalc_WH_if_paused = 1;
         }
 
         //// change ct_type
-        if (sdl_event.key.keysym.sym == SDLK_F1 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_F2 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_type = (ct_type + 1) % CT_NB;
             ct_load(ct_type);
         }
 
-        //// change bb_type all layers
+        //// change bb_type layer 123
         if (sdl_event.key.keysym.sym == SDLK_BACKQUOTE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, -1, (bb_type[0] + 1) % BB_TYPE_NB, bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], (bb_type[1] + 1) % BB_TYPE_NB, bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], (bb_type[2] + 1) % BB_TYPE_NB, bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
 
-        //// change bb_bail all layers
+        //// change bb_bail layer 123
         if (sdl_event.key.keysym.sym == SDLK_1 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0] + 1, bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1] + 1, bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2] + 1, bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
@@ -2103,7 +2103,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0] / 10, bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1] / 10, bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2] / 10, bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
 
-        //// change bb_bail layer 0
+        //// change bb_bail layer 1
         if (sdl_event.key.keysym.sym == SDLK_q && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0] + 1, bb_pps[0], bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
@@ -2120,7 +2120,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0] / 10, bb_pps[0], bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
 
-        //// change bb_bail layer 1
+        //// change bb_bail layer 2
         if (sdl_event.key.keysym.sym == SDLK_a && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1] + 1, bb_pps[1], bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
@@ -2137,7 +2137,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1] / 10, bb_pps[1], bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
 
-        //// change bb_bail layer 2
+        //// change bb_bail layer 3
         if (sdl_event.key.keysym.sym == SDLK_z && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2] + 1, bb_pps[2], bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
@@ -2154,7 +2154,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2] / 10, bb_pps[2], bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
 
-        //// change bb_pps all layers
+        //// change bb_pps layer 123
         if (sdl_event.key.keysym.sym == SDLK_2 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0] + 1, bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1] + 1, bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2] + 1, bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
@@ -2171,7 +2171,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0] / 10, bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1] / 10, bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2] / 10, bb_ppe[2], bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
 
-        //// change bb_pps layer 0
+        //// change bb_pps layer 1
         if (sdl_event.key.keysym.sym == SDLK_w && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0] + 1, bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
@@ -2188,7 +2188,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0] / 10, bb_ppe[0], bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
 
-        //// change bb_pps layer 1
+        //// change bb_pps layer 2
         if (sdl_event.key.keysym.sym == SDLK_s && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1] + 1, bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
@@ -2205,7 +2205,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1] / 10, bb_ppe[1], bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
 
-        //// change bb_pps layer 2
+        //// change bb_pps layer 3
         if (sdl_event.key.keysym.sym == SDLK_x && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2] + 1, bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
@@ -2222,7 +2222,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2] / 10, bb_ppe[2], bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
 
-        //// change bb_ppe all layers
+        //// change bb_ppe layer 123
         if (sdl_event.key.keysym.sym == SDLK_3 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] + 1, bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] + 1, bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] + 1, bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
@@ -2239,7 +2239,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] / 10, bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] / 10, bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] / 10, bb_minn[2], ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
 
-        //// change bb_ppe layer 0
+        //// change bb_ppe layer 1
         if (sdl_event.key.keysym.sym == SDLK_e && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] + 1, bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
@@ -2256,7 +2256,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0] / 10, bb_minn[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
 
-        //// change bb_ppe layer 1
+        //// change bb_ppe layer 2
         if (sdl_event.key.keysym.sym == SDLK_d && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] + 1, bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
@@ -2273,7 +2273,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] / 10, bb_minn[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
 
-        //// change bb_ppe layer 2
+        //// change bb_ppe layer 3
         if (sdl_event.key.keysym.sym == SDLK_c && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] + 1, bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
@@ -2290,7 +2290,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2] / 10, bb_minn[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
 
-        //// change bb_minn all layers
+        //// change bb_minn layer 123
         if (sdl_event.key.keysym.sym == SDLK_4 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] + 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] + 1, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] + 1, ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
@@ -2307,7 +2307,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, -1, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] / 10, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] / 10, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10, ct_type, cm[0], ct_o[0], cm[1], ct_o[1], cm[2], ct_o[2]);
         }
 
-        //// change bb_minn layer 0
+        //// change bb_minn layer 1
         if (sdl_event.key.keysym.sym == SDLK_r && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
@@ -2324,7 +2324,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 0, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0] / 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[0], ct_o[0], 0, 0, 0, 0);
         }
 
-        //// change bb_minn layer 1
+        //// change bb_minn layer 2
         if (sdl_event.key.keysym.sym == SDLK_f && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1] + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
@@ -2341,7 +2341,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 1, bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1] , bb_minn[1] / 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[1], ct_o[1], 0, 0, 0, 0);
         }
 
-        //// change bb_minn layer 2
+        //// change bb_minn layer 3
         if (sdl_event.key.keysym.sym == SDLK_v && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
@@ -2358,7 +2358,7 @@ void sdl_message_check()
             load_preset(1, lr_mode, 2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ct_type, cm[2], ct_o[2], 0, 0, 0, 0);
         }
 
-        //// change cm all layers
+        //// change cm layer 123
         if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm[0] = (cm[0] + 1) % CM_NB;
             cm[1] = (cm[1] + 1) % CM_NB;
@@ -2366,25 +2366,25 @@ void sdl_message_check()
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm layer 0
+        //// change cm layer 1
         if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm[0] = (cm[0] + 1) % CM_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm layer 1
+        //// change cm layer 2
         if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm[1] = (cm[1] + 1) % CM_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm layer 2
+        //// change cm layer 3
         if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm[2] = (cm[2] + 1) % CM_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm_log all layers
+        //// change cm_log layer 123
         if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[0] += 1;
             cm_log[1] += 1;
@@ -2392,7 +2392,7 @@ void sdl_message_check()
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[0] != 0) {
                 cm_log[0] -= 1;
             }
@@ -2403,32 +2403,32 @@ void sdl_message_check()
 
             if (cm_log[2] != 0) {
                 cm_log[2] -= 1;
-            }
-
-            recalc_WH_if_paused = 1;
-        }
-
-        //// change cm_log layer 0
-        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm_log[0] += 1;
-            recalc_WH_if_paused = 1;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            if (cm_log[0] != 0) {
-                cm_log[0] -= 1;
             }
 
             recalc_WH_if_paused = 1;
         }
 
         //// change cm_log layer 1
+        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            cm_log[0] += 1;
+            recalc_WH_if_paused = 1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            if (cm_log[0] != 0) {
+                cm_log[0] -= 1;
+            }
+
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change cm_log layer 2
         if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[1] += 1;
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[1] != 0) {
                 cm_log[1] -= 1;
             }
@@ -2436,13 +2436,13 @@ void sdl_message_check()
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm_log layer 2
+        //// change cm_log layer 3
         if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[2] += 1;
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[2] != 0) {
                 cm_log[2] -= 1;
             }
@@ -2450,7 +2450,7 @@ void sdl_message_check()
             recalc_WH_if_paused = 1;
         }
 
-        //// change ct_o all layers
+        //// change ct_o layer 123
         if (sdl_event.key.keysym.sym == SDLK_6 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_o[0] = ct_cycle(ct_o[0] + 1);
             ct_o[1] = ct_cycle(ct_o[1] + 1);
@@ -2464,18 +2464,12 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_6 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] - 1);
-            ct_o[1] = ct_cycle(ct_o[1] - 1);
-            ct_o[2] = ct_cycle(ct_o[2] - 1);
+            ct_o[0] = 0;
+            ct_o[1] = 0;
+            ct_o[2] = 0;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_6 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] - 10);
-            ct_o[1] = ct_cycle(ct_o[1] - 10);
-            ct_o[2] = ct_cycle(ct_o[2] - 10);
-        }
-
-        //// change ct_o layer 0
+        //// change ct_o layer 1
         if (sdl_event.key.keysym.sym == SDLK_y && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_o[0] = ct_cycle(ct_o[0] + 1);
         }
@@ -2485,14 +2479,10 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_y && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] - 1);
+            ct_o[0] = 0;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_y && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] - 10);
-        }
-
-        //// change ct_o layer 1
+        //// change ct_o layer 2
         if (sdl_event.key.keysym.sym == SDLK_h && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_o[1] = ct_cycle(ct_o[1] + 1);
         }
@@ -2502,14 +2492,10 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_h && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[1] = ct_cycle(ct_o[1] - 1);
+            ct_o[1] = 0;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_h && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[1] = ct_cycle(ct_o[1] - 10);
-        }
-
-        //// change ct_o layer 2
+        //// change ct_o layer 3
         if (sdl_event.key.keysym.sym == SDLK_n && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_o[2] = ct_cycle(ct_o[2] + 1);
         }
@@ -2519,68 +2505,64 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_n && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[2] = ct_cycle(ct_o[2] - 1);
+            ct_o[2] = 0;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_n && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[2] = ct_cycle(ct_o[2] - 10);
-        }
-
-        //// change ct_v all layers
+        //// change ct_v layer 123
         if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[0]++;
             ct_v[1]++;
             ct_v[2]++;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[0]--;
             ct_v[1]--;
             ct_v[2]--;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[0] = 0;
             ct_v[1] = 0;
             ct_v[2] = 0;
         }
 
-        //// change ct_v layer 0
+        //// change ct_v layer 1
         if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[0]++;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_u && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[0]--;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_u && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[0] = 0;
         }
 
-        //// change ct_v layer 1
+        //// change ct_v layer 2
         if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[1]++;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_j && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[1]--;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_j && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[1] = 0;
         }
 
-        //// change ct_v layer 2
+        //// change ct_v layer 3
         if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[2]++;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_m && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[2]--;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_m && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[2] = 0;
         }
 
