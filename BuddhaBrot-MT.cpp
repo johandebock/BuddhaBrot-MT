@@ -164,7 +164,7 @@ int Bh = 1000; // bitmap height
 //// log : if count >= cm_log ? count = cm_log + log(count - cm_log + 1) : count = count
 int cm[LR_NB]; // coloring method , per layer
 #define CM_NB 4 // number of coloring methods
-unsigned int cm_log[LR_NB] = {10, 10, 10}; // logarithmic when >= cm_log
+unsigned int cm_log[LR_NB] = {5, 5, 5}; // logarithmic when >= cm_log
 int cm0n[LR_NB]; // normalization value for coloring method 0 2 = number of filled bins in histogram = number of unique values in render
 int cm1n[LR_NB]; // normalization value for coloring method 1 3 = (number of pixels in render - number of 0 pixels in render)
 
