@@ -377,6 +377,11 @@ void decrease_num_calcthreads()
     int new_num_calcthreads = MAX(td_nb - 3, 3);
 
     for (int td_i = new_num_calcthreads; td_i < td_nb; td_i++) {
+        for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+            R[td_i % 3][Ri] += R[td_i][Ri];
+        }
+
+        Pp[td_i % 3] += Pp[td_i];
         free_calcthread(td_i);
     }
 
