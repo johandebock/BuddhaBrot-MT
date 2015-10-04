@@ -1,3 +1,7 @@
+//// Written by Johan De Bock <johan.debock@gmail.com>
+////
+//// memory requirements : td_nb * (Rw * Rh * 4 + bb_bail * 24) + (Rlrmax + 1) * 12 + (Ww * Wh + Bw * Bh) * 12
+////
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
