@@ -2,7 +2,6 @@
 
 \usepackage[margin=1cm]{geometry}
 \usepackage{tabularx}
-\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 \usepackage{booktabs}
 
@@ -14,7 +13,7 @@
 \begin{table}[h!]
     \caption{Changing layer mode, changing color table type, changing BuddhaBrot type (0=BuddhaBrot, 1=Anti-Buddhabrot, 2=Anti-Buddhabrot with some lobes cut)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRR}
+    \begin{tabularx}{\linewidth}{LLLL}
         \toprule
                    & F1                & F2                     & `                     \\
         \midrule                                                
@@ -29,7 +28,7 @@
 \begin{table}[h!]
     \caption{Saving, loading, calculation thread handling, changing animation frame rate}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & F9                & F10                     & F11               & F12    \\
         \midrule
@@ -42,9 +41,39 @@
 \end{table}
 
 \begin{table}[h!]
+    \caption{Saving render or window to PNG in working directory}
+    \setlength{\tabcolsep}{0.0pt}
+    \begin{tabularx}{\linewidth}{LLLL}
+        \toprule
+                   & Backspace   & Return      & \textbackslash    \\
+        \midrule                                                
+        -          & save window & save render & save render tiled \\
+        Shift      &             &             &                   \\
+        Ctrl       &             &             &                   \\
+        Shift+Ctrl &             &             &                   \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[h!]
+    \caption{Changing render (R) size, zooming BuddhaBrot (bb), panning window (W) in render, panning BuddhaBrot}
+    \setlength{\tabcolsep}{0.0pt}
+    \begin{tabularx}{\linewidth}{LLLLLLL}
+        \toprule
+                   & Page Up         & Page Down       & $\leftarrow$             & $\rightarrow$              & $\uparrow$             & $\downarrow$             \\
+        \midrule                                                                                                                                                 
+        -          & increase R size & decrease R size & pan W $\leftarrow$ 10\%  & pan W  $\rightarrow$ 10\%  & pan W $\uparrow$ 10\%  & pan W $\downarrow$ 10\%  \\
+        Shift      & zoom in bb      & zoom out bb     & pan bb $\leftarrow$ 10\% & pan bb  $\rightarrow$ 10\% & pan bb $\uparrow$ 10\% & pan bb $\downarrow$ 10\% \\
+        Ctrl       &                 &                 & pan W $\leftarrow$ 1\%   & pan W  $\rightarrow$ 1\%   & pan W $\uparrow$ 1\%   & pan W $\downarrow$ 1\%   \\
+        Shift+Ctrl &                 &                 & pan bb $\leftarrow$ 1\%  & pan bb  $\rightarrow$ 1\%  & pan bb $\uparrow$ 1\%  & pan bb $\downarrow$ 1\%  \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[h!]
     \caption{Changing BuddhaBrot parameter: bailout (bail)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 1                      & q                    & a                    & z                    \\
         \midrule                                                                          
@@ -59,7 +88,7 @@
 \begin{table}[h!]
     \caption{Changing BuddhaBrot parameter: path plot start (pps)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 2                      & w                    & s                    & x                    \\
         \midrule                                                                          
@@ -74,7 +103,7 @@
 \begin{table}[h!]
     \caption{Changing BuddhaBrot parameter: path plot end (ppe)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 3                      & e                    & d                    & c                    \\
         \midrule                                                                          
@@ -89,7 +118,7 @@
 \begin{table}[h!]
     \caption{Changing BuddhaBrot parameter: path minimum n\_inf (minn)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 4                      & r                    & f                    & v                    \\
         \midrule                                                                          
@@ -104,7 +133,7 @@
 \begin{table}[h!]
     \caption{Changing coloring method (cm) (0=rank-order mapping, 1=histogram mapping, 2=log+rank-order mapping, 3=log+histogram mapping), changing logarithmic offset for coloring methods 23 (log)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 5                    & t                  & g                  & b                  \\
         \midrule                                                                          
@@ -119,7 +148,7 @@
 \begin{table}[h!]
     \caption{Changing color table offset (ct\_o)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 6                       & y                     & h                     & n                     \\
         \midrule                                                                          
@@ -134,7 +163,7 @@
 \begin{table}[h!]
     \caption{Changing color table cycle speed (ct\_v)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{lRRRR}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 7                      & u                    & j                    & m                    \\
         \midrule                                                                          
