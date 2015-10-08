@@ -167,7 +167,8 @@ int Bh = 1000; // bitmap height
 //// coloring method 3 : 1 , log
 //// log : if count >= cm_log ? count = cm_log + log(count - cm_log + 1) : count = count
 int cm[LR_NB]; // coloring method , per layer
-#define CM_NB 4 // number of coloring methods
+#define CM_NORMAL_NB 2 // number of normal coloring methods
+#define CM_LOG_NB 2 // number of normal coloring methods
 unsigned int cm_log[LR_NB]; // logarithmic when >= cm_log
 int cm0n[LR_NB]; // normalization value for coloring method 0 2 = number of filled bins in histogram = number of unique values in render
 int cm1n[LR_NB]; // normalization value for coloring method 1 3 = (number of pixels in render - number of 0 pixels in render)
@@ -181,7 +182,8 @@ int cm1n[LR_NB]; // normalization value for coloring method 1 3 = (number of pix
 typedef unsigned char rgb[3]; // an RGB value
 rgb* CT; // 1 color table
 int ct_type; // color table type
-#define CT_NB 4 // number of color table types
+#define CT_NONCYCLE_NB 8 // number of noncycle color table types : 1X
+#define CT_CYCLE_NB 3 // number of cycle color table types : 2X
 int ct_e; // last index in color table = len - 1
 int ct_o[LR_NB]; // start offset in ct (0 index gets mapped on this color) , per layer
 int ct_v[LR_NB] = {0, 0, 0}; // cycle speed : diff per frame in index, per layer
@@ -196,84 +198,176 @@ int ct_cycle(int i)
 
 void ct_load(int ct_type)
 {
-    if (ct_type == 0) {
+    //// 1X : noncycle
+    if (ct_type == 10) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = j;
+            CT[i][1] = j;
+            CT[i][2] = j;
+        }
+    }
+
+    if (ct_type == 11) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 255; j >= 0; i++, j--) {
+            CT[i][0] = j;
+            CT[i][1] = j;
+            CT[i][2] = j;
+        }
+    }
+
+    if (ct_type == 12) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = 255 - j;
+            CT[i][1] = j;
+            CT[i][2] = j;
+        }
+    }
+
+    if (ct_type == 13) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = j;
+            CT[i][1] = 255 - j;
+            CT[i][2] = j;
+        }
+    }
+
+    if (ct_type == 14) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = j;
+            CT[i][1] = j;
+            CT[i][2] = 255 - j;
+        }
+    }
+
+    if (ct_type == 15) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = j;
+            CT[i][1] = 255 - j;
+            CT[i][2] = 255 - j;
+        }
+    }
+
+    if (ct_type == 16) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = 255 - j;
+            CT[i][1] = j;
+            CT[i][2] = 255 - j;
+        }
+    }
+
+    if (ct_type == 17) {
+        ct_e = 255;
+        free(CT);
+        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
+
+        for (int i = 0, j = 0; j <= 255; i++, j++) {
+            CT[i][0] = 255 - j;
+            CT[i][1] = 255 - j;
+            CT[i][2] = j;
+        }
+    }
+
+    //// 2X : cycle
+    if (ct_type == 20) {
         ct_e = 509;
         free(CT);
         CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
 
-        for (int i = 0 * 255, j = 0; j < 255; i++, j++) {
+        for (int i = 0, j = 0; j < 255; i++, j++) {
             CT[i][0] = j;
             CT[i][1] = j;
             CT[i][2] = j;
         }
 
-        for (int i = 1 * 255, j = 255; j > 0; i++, j--) {
-            CT[i][0] = j;
-            CT[i][1] = j;
-            CT[i][2] = j;
-        }
-    }
-
-    if (ct_type == 1) {
-        ct_e = 255;
-        free(CT);
-        CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
-
-        for (int i = 0 * 255, j = 0; j <= 255; i++, j++) {
+        for (int i = 255, j = 255; j > 0; i++, j--) {
             CT[i][0] = j;
             CT[i][1] = j;
             CT[i][2] = j;
         }
     }
 
-    if (ct_type == 2) {
-        ct_e = 255;
+    if (ct_type == 21) {
+        ct_e = 509;
         free(CT);
         CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
 
-        for (int i = 0 * 255, j = 255; j >= 0; i++, j--) {
+        for (int i = 0, j = 255; j > 0; i++, j--) {
+            CT[i][0] = j;
+            CT[i][1] = j;
+            CT[i][2] = j;
+        }
+
+        for (int i = 255, j = 0; j < 255; i++, j++) {
             CT[i][0] = j;
             CT[i][1] = j;
             CT[i][2] = j;
         }
     }
 
-    if (ct_type == 3) {
-        ct_e = 6 * 255 - 1;
+    if (ct_type == 22) {
+        ct_e = 1529;
         free(CT);
         CT = (rgb*)calloc(ct_e + 1, sizeof(rgb));
 
-        for (int i = 0 * 255, j = 0; j < 255; i++, j++) {
+        for (int i = 0, j = 0; j < 255; i++, j++) {
             CT[i][0] = j;
             CT[i][1] = 0;
             CT[i][2] = 0;
         }
 
-        for (int i = 1 * 255, j = 0; j < 255; i++, j++) {
+        for (int i = 255, j = 0; j < 255; i++, j++) {
             CT[i][0] = 255;
             CT[i][1] = j;
             CT[i][2] = 0;
         }
 
-        for (int i = 2 * 255, j = 0; j < 255; i++, j++) {
+        for (int i = 510, j = 0; j < 255; i++, j++) {
             CT[i][0] = 255;
             CT[i][1] = 255;
             CT[i][2] = j;
         }
 
-        for (int i = 3 * 255, j = 255; j > 0; i++, j--) {
+        for (int i = 765, j = 255; j > 0; i++, j--) {
             CT[i][0] = 255;
             CT[i][1] = 255;
             CT[i][2] = j;
         }
 
-        for (int i = 4 * 255, j = 255; j > 0; i++, j--) {
+        for (int i = 1020, j = 255; j > 0; i++, j--) {
             CT[i][0] = 255;
             CT[i][1] = j;
             CT[i][2] = 0;
         }
 
-        for (int i = 5 * 255, j = 255; j > 0; i++, j--) {
+        for (int i = 1275, j = 255; j > 0; i++, j--) {
             CT[i][0] = j;
             CT[i][1] = 0;
             CT[i][2] = 0;
@@ -1871,9 +1965,15 @@ void sdl_message_check()
             recalc_WH_if_paused = 1;
         }
 
-        //// change ct_type
+        //// change ct_type noncycle
         if (sdl_event.key.keysym.sym == SDLK_F2 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_type = (ct_type + 1) % CT_NB;
+            ct_type = 10 + MAX(ct_type - 9, 0) % CT_NONCYCLE_NB;
+            ct_load(ct_type);
+        }
+
+        //// change ct_type cycle
+        if (sdl_event.key.keysym.sym == SDLK_F3 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_type = 20 +  MAX(ct_type - 19, 0) % CT_CYCLE_NB;
             ct_load(ct_type);
         }
 
@@ -2154,41 +2254,67 @@ void sdl_message_check()
             load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10);
         }
 
-        //// change cm layer 123
+        //// change normal cm layer 123
         if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[0] = (cm[0] + 1) % CM_NB;
+            cm[0] = (cm[0] + 1) % CM_NORMAL_NB;
             cm[1] = cm[0];
             cm[2] = cm[0];
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm layer 1
+        //// change normal cm layer 1
         if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[0] = (cm[0] + 1) % CM_NB;
+            cm[0] = (cm[0] + 1) % CM_NORMAL_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm layer 2
+        //// change normal cm layer 2
         if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[1] = (cm[1] + 1) % CM_NB;
+            cm[1] = (cm[1] + 1) % CM_NORMAL_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm layer 3
+        //// change normal cm layer 3
         if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[2] = (cm[2] + 1) % CM_NB;
+            cm[2] = (cm[2] + 1) % CM_NORMAL_NB;
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change log cm layer 123
+        if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            cm[0] = 2 + MAX(cm[0] - 1, 0) % CM_LOG_NB;
+            cm[1] = cm[0];
+            cm[2] = cm[0];
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change log cm layer 1
+        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            cm[0] = 2 + MAX(cm[0] - 1, 0) % CM_LOG_NB;
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change log cm layer 2
+        if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            cm[1] = 2 + MAX(cm[1] - 1, 0) % CM_LOG_NB;
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change log cm layer 3
+        if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            cm[2] = 2 + MAX(cm[2] - 1, 0) % CM_LOG_NB;
             recalc_WH_if_paused = 1;
         }
 
         //// change cm_log layer 123
-        if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[0] += 1;
             cm_log[1] = cm_log[0];
             cm_log[2] = cm_log[0];
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[0] != 0) {
                 cm_log[0] -= 1;
             }
@@ -2199,12 +2325,12 @@ void sdl_message_check()
         }
 
         //// change cm_log layer 1
-        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[0] += 1;
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[0] != 0) {
                 cm_log[0] -= 1;
             }
@@ -2213,12 +2339,12 @@ void sdl_message_check()
         }
 
         //// change cm_log layer 2
-        if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[1] += 1;
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[1] != 0) {
                 cm_log[1] -= 1;
             }
@@ -2227,12 +2353,12 @@ void sdl_message_check()
         }
 
         //// change cm_log layer 3
-        if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             cm_log[2] += 1;
             recalc_WH_if_paused = 1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (cm_log[2] != 0) {
                 cm_log[2] -= 1;
             }
@@ -3046,7 +3172,7 @@ int main(int argc, char* argv[])
         td_nb = MIN(ceil((double)td_vc_nb / 3) * 3, TD_MAX);
     }
 
-    load_location_bb_color_param(0, 1.0, 0.0, 0.0, 0.0, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 1, 0, 5, 0, 0, 5, 0, 0, 5, 0);
+    load_location_bb_color_param(0, 1.0, 0.0, 0.0, 0.0, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 10, 0, 5, 0, 0, 5, 0, 0, 5, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));

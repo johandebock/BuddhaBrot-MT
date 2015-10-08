@@ -11,16 +11,16 @@
 \begin{center}{\Huge BuddhaBrot-MT manual}\end{center}
 
 \begin{table}[h!]
-    \caption{Changing layer mode, changing color table type, changing BuddhaBrot type (0=BuddhaBrot, 1=Anti-Buddhabrot, 2=Anti-Buddhabrot with some lobes cut)}
+    \caption{Changing layer mode, changing color table (noncycle and cycle) (ct), changing BuddhaBrot (bb) type (0=BuddhaBrot, 1=Anti-Buddhabrot, 2=Anti-Buddhabrot with some lobes cut)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{LLLL}
+    \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
-                   & F1                & F2                     & `                     \\
-        \midrule                                                
-        -          & cycle layer mode  & cycle color table type & cycle BuddhaBrot type \\
-        Shift      &                   &                        &                       \\
-        Ctrl       &                   &                        &                       \\
-        Shift+Ctrl &                   &                        &                       \\
+                   & F1          & F2          & F3       & `       \\
+        \midrule                                                                         
+        -          & layer mode  & noncycle ct & cycle ct & bb type \\
+        Shift      &             &             &          &         \\
+        Ctrl       &             &             &          &         \\
+        Shift+Ctrl &             &             &          &         \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -32,7 +32,7 @@
         \toprule
                    & F9                & F10                     & F11               & F12    \\
         \midrule
-                   & save status      & load status             & pause calculations & 1 fps  \\
+        -          & save status      & load status             & pause calculations & 1 fps  \\
         Shift      & save parameters  & load parameters         & threads $+$= 3     & 10 fps \\
         Ctrl       &                  & load status (threads=3) & threads $-$= 3     & 30 fps \\
         Shift+Ctrl &                  &                         &                    &        \\
@@ -137,10 +137,10 @@
         \toprule
                    & 5                    & t                  & g                  & b                  \\
         \midrule                                                                          
-        -          & layer 123 cycle cm   & layer 1 cycle cm   & layer 2 cycle cm   & layer 3 cycle cm   \\
-        Shift      & layer 123 log $+$= 1 & layer 1 log $+$= 1 & layer 2 log $+$= 1 & layer 3 log $+$= 1 \\
-        Ctrl       & layer 123 log $-$= 1 & layer 1 log $-$= 1 & layer 2 log $-$= 1 & layer 3 log $-$= 1 \\
-        Shift+Ctrl &                      &                    &                    &                    \\
+        -          & layer 123 normal cm  & layer 1 normal cm  & layer 2 normal cm  & layer 3 normal cm  \\
+        Shift      & layer 123 log cm     & layer 1 log cm     & layer 2 log cm     & layer 3 log cm     \\
+        Ctrl       & layer 123 log $+$= 1 & layer 1 log $+$= 1 & layer 2 log $+$= 1 & layer 3 log $+$= 1 \\
+        Shift+Ctrl & layer 123 log $-$= 1 & layer 1 log $-$= 1 & layer 2 log $-$= 1 & layer 3 log $-$= 1 \\
         \bottomrule
     \end{tabularx}
 \end{table}

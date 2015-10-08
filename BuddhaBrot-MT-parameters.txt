@@ -29,7 +29,7 @@ pathplotstart3 0
 pathplotend3 0
 pathminninf3 0
 
-colortabletype 1
+colortabletype 10
 
 coloringmethod1 0
 coloringmethodlog1 5
