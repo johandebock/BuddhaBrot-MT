@@ -13,14 +13,11 @@
 \begin{table}[h!]
     \caption{Changing layer mode, changing color table (noncycle and cycle) (ct), changing BuddhaBrot (bb) type (0=BuddhaBrot, 1=Anti-Buddhabrot, 2=Anti-Buddhabrot with some lobes cut)}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{LLLLL}
+    \begin{tabularx}{\linewidth}{LLLLLL}
         \toprule
-                   & F1          & F2          & F3       & `       \\
-        \midrule                                                                         
-        -          & layer mode  & noncycle ct & cycle ct & bb type \\
-        Shift      &             &             &          &         \\
-        Ctrl       &             &             &          &         \\
-        Shift+Ctrl &             &             &          &         \\
+                   & F1          & F2          & F3       & `       & Esc              \\
+        \midrule                                                                                   
+        -          & layer mode  & noncycle ct & cycle ct & bb type & toggle title bar \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -35,22 +32,19 @@
         -          & save status      & load status             & pause calculations & 1 fps  \\
         Shift      & save parameters  & load parameters         & threads $+$= 3     & 10 fps \\
         Ctrl       &                  & load status (threads=3) & threads $-$= 3     & 30 fps \\
-        Shift+Ctrl &                  &                         &                    &        \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
 \begin{table}[h!]
-    \caption{Saving render or window to PNG in working directory}
+    \caption{Saving window, tiled (T) render, full render to PNG in working directory}
     \setlength{\tabcolsep}{0.0pt}
-    \begin{tabularx}{\linewidth}{LLLL}
+    \begin{tabularx}{\linewidth}{LLLLLL}
         \toprule
-                   & Backspace   & Return      & \textbackslash    \\
-        \midrule                                                
-        -          & save window & save render & save render tiled \\
-        Shift      &             &             &                   \\
-        Ctrl       &             &             &                   \\
-        Shift+Ctrl &             &             &                   \\
+                   & Backspace        & \textbackslash     &  Return          & [           & ]            \\
+        \midrule                                                                                      
+        -          & save window      & save render tiled  & save render      & inc T width & inc T height \\
+        Shift      & toggle auto save & toggle auto save   & toggle auto save & dec T width & dec T height \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -60,12 +54,12 @@
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLLLL}
         \toprule
-                   & Page Up         & Page Down       & $\leftarrow$             & $\rightarrow$              & $\uparrow$             & $\downarrow$             \\
+                   & Page Up    & Page Down   & $\leftarrow$             & $\rightarrow$              & $\uparrow$             & $\downarrow$             \\
         \midrule                                                                                                                                                 
-        -          & increase R size & decrease R size & pan W $\leftarrow$ 10\%  & pan W  $\rightarrow$ 10\%  & pan W $\uparrow$ 10\%  & pan W $\downarrow$ 10\%  \\
-        Shift      & zoom in bb      & zoom out bb     & pan bb $\leftarrow$ 10\% & pan bb  $\rightarrow$ 10\% & pan bb $\uparrow$ 10\% & pan bb $\downarrow$ 10\% \\
-        Ctrl       &                 &                 & pan W $\leftarrow$ 1\%   & pan W  $\rightarrow$ 1\%   & pan W $\uparrow$ 1\%   & pan W $\downarrow$ 1\%   \\
-        Shift+Ctrl &                 &                 & pan bb $\leftarrow$ 1\%  & pan bb  $\rightarrow$ 1\%  & pan bb $\uparrow$ 1\%  & pan bb $\downarrow$ 1\%  \\
+        -          & inc R size & dec R size  & pan W $\leftarrow$ 10\%  & pan W  $\rightarrow$ 10\%  & pan W $\uparrow$ 10\%  & pan W $\downarrow$ 10\%  \\
+        Shift      & zoom in bb & zoom out bb & pan bb $\leftarrow$ 10\% & pan bb  $\rightarrow$ 10\% & pan bb $\uparrow$ 10\% & pan bb $\downarrow$ 10\% \\
+        Ctrl       &            &             & pan W $\leftarrow$ 1\%   & pan W  $\rightarrow$ 1\%   & pan W $\uparrow$ 1\%   & pan W $\downarrow$ 1\%   \\
+        Shift+Ctrl &            &             & pan bb $\leftarrow$ 1\%  & pan bb  $\rightarrow$ 1\%  & pan bb $\uparrow$ 1\%  & pan bb $\downarrow$ 1\%  \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -155,7 +149,6 @@
         -          & layer 123 ct\_o $+$= 1  & layer 1 ct\_o $+$= 1  & layer 2 ct\_o $+$= 1  & layer 3 ct\_o $+$= 1  \\
         Shift      & layer 123 ct\_o $+$= 10 & layer 1 ct\_o $+$= 10 & layer 2 ct\_o $+$= 10 & layer 3 ct\_o $+$= 10 \\
         Ctrl       & layer 123 ct\_o = 0     & layer 1 ct\_o = 0     & layer 2 ct\_o = 0     & layer 3 ct\_o = 0     \\
-        Shift+Ctrl &                         &                       &                       &                       \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -170,7 +163,6 @@
         -          & layer 123 ct\_v $+$= 1 & layer 1 ct\_v $+$= 1 & layer 2 ct\_v $+$= 1 & layer 3 ct\_v $+$= 1 \\
         Shift      & layer 123 ct\_v $-$= 1 & layer 1 ct\_v $-$= 1 & layer 2 ct\_v $-$= 1 & layer 3 ct\_v $-$= 1 \\
         Ctrl       & layer 123 ct\_v = 0    & layer 1 ct\_v = 0    & layer 2 ct\_v = 0    & layer 3 ct\_v = 0    \\
-        Shift+Ctrl &                        &                      &                      &                      \\
         \bottomrule
     \end{tabularx}
 \end{table}
