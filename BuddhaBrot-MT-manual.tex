@@ -16,7 +16,7 @@
     \begin{tabularx}{\linewidth}{LLLLLL}
         \toprule
                    & F1          & F2          & F3       & `       & Esc              \\
-        \midrule                                                                                   
+        \midrule
         -          & layer mode  & noncycle ct & cycle ct & bb type & toggle title bar \\
         \bottomrule
     \end{tabularx}
@@ -27,24 +27,36 @@
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
-                   & F9                & F10                     & F11               & F12    \\
+                   & F9          & F10                     & F11               & F12    \\
         \midrule
-        -          & save status      & load status             & pause calculations & 1 fps  \\
-        Shift      & save parameters  & load parameters         & threads $+$= 3     & 10 fps \\
-        Ctrl       &                  & load status (threads=3) & threads $-$= 3     & 30 fps \\
+        -          & save status & load status             & pause calculations & 1 fps  \\
+        Shift      &             & load parameters         & threads $+$= 3     & 10 fps \\
+        Ctrl       &             & load status (threads=3) & threads $-$= 3     & 30 fps \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
 \begin{table}[h!]
-    \caption{Saving window, tiled (T) render, full render to PNG in working directory}
+    \caption{Writing window, tiled (T) render, full render to PNG in working directory, changing auto write mode (awm) (0=no auto write, 1=auto write based on elapsed time, 2=auto write based on number of paths plotted)}
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLLL}
         \toprule
-                   & Backspace        & \textbackslash     &  Return          & [           & ]            \\
-        \midrule                                                                                      
-        -          & save window      & save render tiled  & save render      & inc T width & inc T height \\
-        Shift      & toggle auto save & toggle auto save   & toggle auto save & dec T width & dec T height \\
+                   & Backspace    & \textbackslash     & Return       & [           & ]            \\
+        \midrule
+        -          & write window & write render tiled & write render & inc T width & inc T height \\
+        Shift      & awm window   & awm render tiled   & awm render   & dec T width & dec T height \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[h!]
+    \caption{Changing time (t) between each auto PNG write, changing number of paths plotted difference (pp) between each written auto PNG}
+    \setlength{\tabcolsep}{0.0pt}
+    \begin{tabularx}{\linewidth}{LLLLL}
+        \toprule
+                   & -         & =         & ;          & '          \\
+        \midrule
+        -          & t $/$= 10 & t $*$= 10 & pp $/$= 10 & pp $*$= 10 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -55,7 +67,7 @@
     \begin{tabularx}{\linewidth}{LLLLLLL}
         \toprule
                    & Page Up    & Page Down   & $\leftarrow$             & $\rightarrow$              & $\uparrow$             & $\downarrow$             \\
-        \midrule                                                                                                                                                 
+        \midrule
         -          & inc R size & dec R size  & pan W $\leftarrow$ 10\%  & pan W  $\rightarrow$ 10\%  & pan W $\uparrow$ 10\%  & pan W $\downarrow$ 10\%  \\
         Shift      & zoom in bb & zoom out bb & pan bb $\leftarrow$ 10\% & pan bb  $\rightarrow$ 10\% & pan bb $\uparrow$ 10\% & pan bb $\downarrow$ 10\% \\
         Ctrl       &            &             & pan W $\leftarrow$ 1\%   & pan W  $\rightarrow$ 1\%   & pan W $\uparrow$ 1\%   & pan W $\downarrow$ 1\%   \\
@@ -70,7 +82,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 1                      & q                    & a                    & z                    \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 bail $+$= 1  & layer 1 bail $+$= 1  & layer 2 bail $+$= 1  & layer 3 bail $+$= 1  \\
         Shift      & layer 123 bail $*$= 10 & layer 1 bail $*$= 10 & layer 2 bail $*$= 10 & layer 3 bail $*$= 10 \\
         Ctrl       & layer 123 bail $-$= 1  & layer 1 bail $-$= 1  & layer 2 bail $-$= 1  & layer 3 bail $-$= 1  \\
@@ -85,7 +97,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 2                      & w                    & s                    & x                    \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 pps $+$= 1  & layer 1 pps $+$= 1  & layer 2 pps $+$= 1  & layer 3 pps $+$= 1  \\
         Shift      & layer 123 pps $*$= 10 & layer 1 pps $*$= 10 & layer 2 pps $*$= 10 & layer 3 pps $*$= 10 \\
         Ctrl       & layer 123 pps $-$= 1  & layer 1 pps $-$= 1  & layer 2 pps $-$= 1  & layer 3 pps $-$= 1  \\
@@ -100,7 +112,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 3                      & e                    & d                    & c                    \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 ppe $+$= 1  & layer 1 ppe $+$= 1  & layer 2 ppe $+$= 1  & layer 3 ppe $+$= 1  \\
         Shift      & layer 123 ppe $*$= 10 & layer 1 ppe $*$= 10 & layer 2 ppe $*$= 10 & layer 3 ppe $*$= 10 \\
         Ctrl       & layer 123 ppe $-$= 1  & layer 1 ppe $-$= 1  & layer 2 ppe $-$= 1  & layer 3 ppe $-$= 1  \\
@@ -115,7 +127,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 4                      & r                    & f                    & v                    \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 minn $+$= 1  & layer 1 minn $+$= 1  & layer 2 minn $+$= 1  & layer 3 minn $+$= 1  \\
         Shift      & layer 123 minn $*$= 10 & layer 1 minn $*$= 10 & layer 2 minn $*$= 10 & layer 3 minn $*$= 10 \\
         Ctrl       & layer 123 minn $-$= 1  & layer 1 minn $-$= 1  & layer 2 minn $-$= 1  & layer 3 minn $-$= 1  \\
@@ -130,7 +142,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 5                    & t                  & g                  & b                  \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 normal cm  & layer 1 normal cm  & layer 2 normal cm  & layer 3 normal cm  \\
         Shift      & layer 123 log cm     & layer 1 log cm     & layer 2 log cm     & layer 3 log cm     \\
         Ctrl       & layer 123 log $+$= 1 & layer 1 log $+$= 1 & layer 2 log $+$= 1 & layer 3 log $+$= 1 \\
@@ -145,7 +157,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 6                       & y                     & h                     & n                     \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 ct\_o $+$= 1  & layer 1 ct\_o $+$= 1  & layer 2 ct\_o $+$= 1  & layer 3 ct\_o $+$= 1  \\
         Shift      & layer 123 ct\_o $+$= 10 & layer 1 ct\_o $+$= 10 & layer 2 ct\_o $+$= 10 & layer 3 ct\_o $+$= 10 \\
         Ctrl       & layer 123 ct\_o = 0     & layer 1 ct\_o = 0     & layer 2 ct\_o = 0     & layer 3 ct\_o = 0     \\
@@ -159,7 +171,7 @@
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
                    & 7                      & u                    & j                    & m                    \\
-        \midrule                                                                          
+        \midrule
         -          & layer 123 ct\_v $+$= 1 & layer 1 ct\_v $+$= 1 & layer 2 ct\_v $+$= 1 & layer 3 ct\_v $+$= 1 \\
         Shift      & layer 123 ct\_v $-$= 1 & layer 1 ct\_v $-$= 1 & layer 2 ct\_v $-$= 1 & layer 3 ct\_v $-$= 1 \\
         Ctrl       & layer 123 ct\_v = 0    & layer 1 ct\_v = 0    & layer 2 ct\_v = 0    & layer 3 ct\_v = 0    \\

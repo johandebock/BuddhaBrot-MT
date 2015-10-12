@@ -1,6 +1,6 @@
 //// Written by Johan De Bock <johan.debock@gmail.com>
 ////
-//// memory requirements : td_nb * (Rw * Rh * 4 + bb_bail * 24) + (Rlrmax + 1) * 12 + (Ww * Wh + Tw * Th) * 12
+//// memory requirements : td_nb * (Rw * Rh * 4 + bb_bail * 24) + (Rlrmax[0] + Rlrmax[1] + Rlrmax[2] + 3) * 4 + (Ww * Wh + Tw * Th) * 12
 ////
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,17 +33,6 @@ char filename[512];
 char dirname[512];
 char commandname[512];
 
-////general
-double fps = 1.0;
-Uint32 t_lastW = 0;
-int recalc_WH_if_paused = 0;
-int autowriteWtoB = 0;
-int autowriteRtoBtiled = 0;
-int autowriteRtoB = 0;
-Uint32 t_lastB = 0;
-Uint32 t_initB = 1 * 60 * 1000;
-Uint32 t_deltaB = 10 * 60 * 1000;
-
 //// SDL
 SDL_Window* sdl_window;
 SDL_Renderer* sdl_renderer;
@@ -52,7 +41,29 @@ SDL_Texture* sdl_texture;
 SDL_Event sdl_event;
 
 
+//// keep total number of paths plotted for a render
+long long unsigned int Ppsum;
 
+//// fps frames per second regulation
+double fps = 1.0;
+Uint32 t_last_frame = 0; // time last frame was rendered
+
+//// auto write PNG regulation
+//// auto write mode 0 : no auto write
+//// auto write mode 1 : auto write based on elapsed time
+//// auto write mode 2 : auto write based on number of paths plotted
+int autoWtoPNG = 0; // auto write window to one png
+int autoRTtoPNG = 0; // auto write tiled render to multiple pngs
+int autoRtoPNG = 0; // auto write render to one png
+#define AUTOWRITE_MODE_NB 3 // number of auto write PNG modes
+
+//// auto write mode 1
+Uint32 t_autoPNG_last = 0; // time last auto PNG was written
+Uint32 t_autoPNG_delta = 6e5; // time between each auto PNG write, default 10min
+
+//// auto write mode 2
+long long unsigned int Ppsum_autoPNG_last = 0; // Ppsum for last written auto PNG
+long long unsigned int Ppsum_autoPNG_delta = 1e9; // Ppsum difference between each written auto PNG, default 1e9
 
 //// td threads
 #define TD_MAX 18 // maximum number of calc threads
@@ -119,7 +130,6 @@ unsigned int* R[TD_MAX]; // 1 render , per thread
 int Rw; // render width
 int Rh; // render height
 
-unsigned int Rmax = 0; // maximum count in all renders
 unsigned int Rlrmax[LR_NB]; // maximum count , per layer
 
 double Rr_lo, Rr_up; // real lower and upper bound of rectangle R in complex plane
@@ -138,7 +148,7 @@ double Rh_f = 0.5; // factor to change render height
 //// H histogram
 //// a histogram of the values in a render, bins 0, 1, 2, ..., Rlrmax
 unsigned int* H[LR_NB]; // 1 histogram , per layer
-unsigned int Hl[LR_NB] = {10 * 1000 * 1000, 10 * 1000 * 1000, 10 * 1000 * 1000}; // histogram length > Rlrmax , per layer
+unsigned int Hl[LR_NB] = {0, 0, 0}; // histogram length > Rlrmax , per layer
 
 //// W window (count matrix (of pixels))
 //// for the pixels shown in the BuddhaBrot window
@@ -151,6 +161,8 @@ int RWoy; // y offset of window in render
 
 double Wr_lo, Wr_up; // real lower and upper bound of rectangle W in complex plane
 double Wi_lo, Wi_up; // imaginary lower and upper bound of rectangle W in complex plane
+
+int recalc_WH_if_paused = 0; // indicate that H and W need to be recalculated when changing layer mode/coloring method/panning window when paused
 
 //// T tile (count matrix (of pixels))
 //// for the pixels outputted to a png image
@@ -583,6 +595,9 @@ void load_location(int pause_calcthreads, double zoom, double x_l, double x_u, d
     Wr_up = Wr_lo + Wh / Rhdivr;
     Wi_lo = Ri_lo + RWox / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
+    Hl[0] = 0;
+    Hl[1] = 0;
+    Hl[2] = 0;
 
     if (pause_calcthreads) {
         td_pause = 0;
@@ -634,8 +649,6 @@ void load_bb_param(int load_selectedlayer, int load_bb_type, int load_bb_bail, i
     #pragma omp flush(td_pause)
 }
 
-//// 0 pause_calcthreads : td_pause the calculations during the loading
-//// 1.0 zoom : zooming of complex plane
 void load_location_bb_color_param(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh, int load_lr_mode, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_cm_log1, int load_ct_o1, int load_cm2, int load_cm_log2, int load_ct_o2, int load_cm3, int load_cm_log3, int load_ct_o3)
 {
     if (pause_calcthreads) {
@@ -973,16 +986,12 @@ int save_param_file()
         fprintf(parameters_file, "pathsplottedthread%02d %I64u\n", td_i, Pp[td_i]);
     }
 
-    long long unsigned int Ppsum = 0;
-
-    for (int td_i = 0; td_i < td_nb; td_i += 1) {
-        Ppsum += Pp[td_i];
-    }
-
     fprintf(parameters_file, "\n");
     fprintf(parameters_file, "pathsplottedsum %I64u\n", Ppsum);
     fprintf(parameters_file, "\n");
-    fprintf(parameters_file, "rendercountmatrixmax %d\n", Rmax);
+    fprintf(parameters_file, "rendercountmatrixmax1 %d\n", Rlrmax[0]);
+    fprintf(parameters_file, "rendercountmatrixmax2 %d\n", Rlrmax[1]);
+    fprintf(parameters_file, "rendercountmatrixmax3 %d\n", Rlrmax[2]);
     fclose(parameters_file);
     return (1);
 }
@@ -1043,6 +1052,12 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
         }
     }
 
+    Ppsum = 0;
+
+    for (int td_i = 0; td_i < td_nb; td_i += 1) {
+        Ppsum += Pp[td_i];
+    }
+
     fclose(parameters_file);
     return (numberofcalculationthreads);
 }
@@ -1051,16 +1066,90 @@ int save_status_files()
 {
     reponsive_caption_update("BuddhaBrot-MT: saving status: pausing calculation threads...");
     pause_calcthreads_and_wait();
+    Ppsum = 0;
 
-    for (int Ri = 0; Ri < Rw * Rh; Ri++) {
-        unsigned int sum = 0;
+    for (int td_i = 0; td_i < td_nb; td_i += 1) {
+        Ppsum += Pp[td_i];
+    }
 
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            sum += R[td_i][Ri];
+    if (lr_mode == 0) {
+        Rlrmax[0] = 0;
+        Rlrmax[1] = 0;
+        Rlrmax[2] = 0;
+
+        for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
+            for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+                int Ri = Ry * Rw + Rx;
+                unsigned int sum = 0;
+
+                for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                    sum += R[td_i][Ri];
+                }
+
+                if (cm[0] == 2 || cm[0] == 3) {
+                    if (sum >= cm_log[0]) {
+                        sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+                    }
+                }
+
+                if (sum > Rlrmax[0]) {
+                    Rlrmax[0] = sum;
+                }
+            }
         }
+    }
 
-        if (sum > Rmax) {
-            Rmax = sum;
+    if (lr_mode == 1) {
+        for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
+            Rlrmax[layer_iter] = 0;
+
+            for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
+                for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+                    int Ri = Ry * Rw + Rx;
+                    unsigned int sum = 0;
+
+                    for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                        sum += R[td_i][Ri];
+                    }
+
+                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
+                        if (sum >= cm_log[layer_iter]) {
+                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                        }
+                    }
+
+                    if (sum > Rlrmax[layer_iter]) {
+                        Rlrmax[layer_iter] = sum;
+                    }
+                }
+            }
+        }
+    }
+
+    if (lr_mode == 2) {
+        for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
+            Rlrmax[layer_iter] = 0;
+
+            for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
+                for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+                    int Ri = Ry * Rw + Rx;
+                    unsigned int sum = 0;
+
+                    for (int td_i = layer_iter; td_i < td_nb; td_i += LR_NB) {
+                        sum += R[td_i][Ri];
+                    }
+
+                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
+                        if (sum >= cm_log[layer_iter]) {
+                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                        }
+                    }
+
+                    if (sum > Rlrmax[layer_iter]) {
+                        Rlrmax[layer_iter] = sum;
+                    }
+                }
+            }
         }
     }
 
@@ -1160,9 +1249,9 @@ int load_status_files_minmem()
     return (1);
 }
 
-void RtoPNG(const char* filename)
+void writeRtoPNG(const char* filename)
 {
-    reponsive_caption_update("BuddhaBrot-MT: write to 8-bit png: pausing calculation threads...");
+    reponsive_caption_update("BuddhaBrot-MT: writing to 8-bit png: pausing calculation threads...");
     pause_calcthreads_and_wait();
 
     if (lr_mode == 0) {
@@ -1196,6 +1285,21 @@ void RtoPNG(const char* filename)
             H[0] = (unsigned int*)calloc(Hl[0], sizeof(unsigned int));
         } else {
             memset(H[0], 0, Hl[0] * sizeof(unsigned int));
+        }
+
+        Rlrmax[1] = 0;
+        Rlrmax[2] = 0;
+        Hl[1] = 0;
+        Hl[2] = 0;
+
+        if (H[1] != NULL) {
+            free(H[1]);
+            H[1] = NULL;
+        }
+
+        if (H[2] != NULL) {
+            free(H[2]);
+            H[2] = NULL;
         }
 
         for (int Ri = 0; Ri < Rw * Rh; Ri++) {
@@ -1388,7 +1492,7 @@ void RtoPNG(const char* filename)
     if (lr_mode == 0) {
         if (cm[0] == 0 || cm[0] == 2) {
             for (int y = 0; y < Rh; y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int x = 0; x < Rw; x++) {
@@ -1423,7 +1527,7 @@ void RtoPNG(const char* filename)
 
         if (cm[0] == 1 || cm[0] == 3) {
             for (int y = 0; y < Rh; y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int x = 0; x < Rw; x++) {
@@ -1459,7 +1563,7 @@ void RtoPNG(const char* filename)
 
     if (lr_mode == 1) {
         for (int y = 0; y < Rh; y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
             reponsive_caption_update(titlebar);
 
             for (int x = 0; x < Rw; x++) {
@@ -1505,7 +1609,7 @@ void RtoPNG(const char* filename)
 
     if (lr_mode == 2) {
         for (int y = 0; y < Rh; y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
             reponsive_caption_update(titlebar);
 
             for (int x = 0; x < Rw; x++) {
@@ -1562,9 +1666,9 @@ void RtoPNG(const char* filename)
     #pragma omp flush(td_pause)
 }
 
-void TtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y, int local_png_width, int local_png_height)
+void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y, int local_png_width, int local_png_height)
 {
-    reponsive_caption_update("BuddhaBrot-MT: write to 8-bit png: pausing calculation threads...");
+    reponsive_caption_update("BuddhaBrot-MT: writing to 8-bit png: pausing calculation threads...");
     pause_calcthreads_and_wait();
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
@@ -1607,6 +1711,21 @@ void TtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y
             H[0] = (unsigned int*)calloc(Hl[0], sizeof(unsigned int));
         } else {
             memset(H[0], 0, Hl[0] * sizeof(unsigned int));
+        }
+
+        Rlrmax[1] = 0;
+        Rlrmax[2] = 0;
+        Hl[1] = 0;
+        Hl[2] = 0;
+
+        if (H[1] != NULL) {
+            free(H[1]);
+            H[1] = NULL;
+        }
+
+        if (H[2] != NULL) {
+            free(H[2]);
+            H[2] = NULL;
         }
 
         for (int png_y = 0; png_y < local_png_height; png_y++) {
@@ -1779,7 +1898,7 @@ void TtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y
     if (lr_mode == 0) {
         if (cm[0] == 0 || cm[0] == 2) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)png_y / local_png_height * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / local_png_height * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < local_png_width; png_x++) {
@@ -1801,7 +1920,7 @@ void TtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y
 
         if (cm[0] == 1 || cm[0] == 3) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < local_png_width; png_x++) {
@@ -1824,7 +1943,7 @@ void TtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y
 
     if (lr_mode == 1) {
         for (int png_y = 0; png_y < local_png_height; png_y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
             reponsive_caption_update(titlebar);
 
             for (int png_x = 0; png_x < local_png_width; png_x++) {
@@ -1857,7 +1976,7 @@ void TtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y
 
     if (lr_mode == 2) {
         for (int png_y = 0; png_y < local_png_height; png_y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: write to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
             reponsive_caption_update(titlebar);
 
             for (int png_x = 0; png_x < local_png_width; png_x++) {
@@ -1927,10 +2046,6 @@ void sdl_message_check()
         //// saving status
         if (sdl_event.key.keysym.sym == SDLK_F9 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             save_status_files();
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_F9 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            save_param_file();
         }
 
         //// loading status
@@ -2666,14 +2781,8 @@ void sdl_message_check()
             load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) + Rr_ra * 0.01, 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
         }
 
-        //// saving window to one png
+        //// writing window to one png
         if (sdl_event.key.keysym.sym == SDLK_BACKSPACE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            long long unsigned int Ppsum = 0;
-
-            for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                Ppsum += Pp[td_i];
-            }
-
             if (lr_mode == 0) {
                 sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)Ppsum);
             }
@@ -2686,21 +2795,15 @@ void sdl_message_check()
                 sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
             }
 
-            TtoPNG(filename, RWox, RWoy, Ww, Wh);
+            writeTtoPNG(filename, RWox, RWoy, Ww, Wh);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_BACKSPACE && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            autowriteWtoB = 1 - autowriteWtoB;
+            autoWtoPNG = (autoWtoPNG + 1) % AUTOWRITE_MODE_NB;
         }
 
-        //// saving render to multiple small pngs
+        //// writing tiled render to multiple pngs
         if (sdl_event.key.keysym.sym == SDLK_BACKSLASH && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            long long unsigned int Ppsum = 0;
-
-            for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                Ppsum += Pp[td_i];
-            }
-
             if (lr_mode == 0) {
                 sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, Tw, Th, (double)Ppsum);
             }
@@ -2723,23 +2826,17 @@ void sdl_message_check()
                     double Ti_lo = Ri_lo + png_offset_x / Rwdivi;
                     double Ti_up = Ti_lo + Tw / Rwdivi;
                     sprintf(filename, "%s/T%ix%i %05i %05i W(%.6f %.6f %.1f).png", dirname, Tw, Th, png_offset_y, png_offset_x, 0.5 * (Tr_lo + Tr_up), 0.5 * (Ti_lo + Ti_up), 4.0 / (Tr_up - Tr_lo));
-                    TtoPNG(filename, png_offset_x, png_offset_y, Tw, Th);
+                    writeTtoPNG(filename, png_offset_x, png_offset_y, Tw, Th);
                 }
             }
         }
 
         if (sdl_event.key.keysym.sym == SDLK_BACKSLASH && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            autowriteRtoBtiled = 1 - autowriteRtoBtiled;
+            autoRTtoPNG = (autoRTtoPNG + 1) % AUTOWRITE_MODE_NB;
         }
 
-        //// saving render to one big png
+        //// writing render to one png
         if (sdl_event.key.keysym.sym == SDLK_RETURN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            long long unsigned int Ppsum = 0;
-
-            for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                Ppsum += Pp[td_i];
-            }
-
             if (lr_mode == 0) {
                 sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
             }
@@ -2752,11 +2849,11 @@ void sdl_message_check()
                 sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
-            RtoPNG(filename);
+            writeRtoPNG(filename);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_RETURN && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            autowriteRtoB = 1 - autowriteRtoB;
+            autoRtoPNG = (autoRtoPNG + 1) % AUTOWRITE_MODE_NB;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_LEFTBRACKET && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
@@ -2773,6 +2870,22 @@ void sdl_message_check()
 
         if (sdl_event.key.keysym.sym == SDLK_RIGHTBRACKET && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             Th = MAX(Th * Rh_f, 1000);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_MINUS && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            t_autoPNG_delta = MAX(t_autoPNG_delta / 10, 6e4);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_EQUALS && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            t_autoPNG_delta = MIN(t_autoPNG_delta * 10, 6e7);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_SEMICOLON && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            Ppsum_autoPNG_delta = MAX(Ppsum_autoPNG_delta / 10, 1e4);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_QUOTE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            Ppsum_autoPNG_delta = Ppsum_autoPNG_delta * 10;
         }
     }
 }
@@ -2800,20 +2913,20 @@ void visualisation_thread()
                 break;
             }
 
-            wait_ms(MAX(1000.0 / fps - (SDL_GetTicks() - t_lastW), 0));
-            t_lastW = SDL_GetTicks();
+            Ppsum = 0;
+
+            for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                Ppsum += Pp[td_i];
+            }
+
+            wait_ms(MAX(1000.0 / fps - (SDL_GetTicks() - t_last_frame), 0));
+            t_last_frame = SDL_GetTicks();
 
             while (SDL_PollEvent(&sdl_event)) {
                 sdl_message_check();
             }
 
-            if (autowriteWtoB && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
-                long long unsigned int Ppsum = 0;
-
-                for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    Ppsum += Pp[td_i];
-                }
-
+            if ((autoWtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoWtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)Ppsum);
                 }
@@ -2826,16 +2939,10 @@ void visualisation_thread()
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
                 }
 
-                TtoPNG(filename, RWox, RWoy, Ww, Wh);
+                writeTtoPNG(filename, RWox, RWoy, Ww, Wh);
             }
 
-            if (autowriteRtoBtiled && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
-                long long unsigned int Ppsum = 0;
-
-                for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    Ppsum += Pp[td_i];
-                }
-
+            if ((autoRTtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRTtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
                     sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, Tw, Th, (double)Ppsum);
                 }
@@ -2858,18 +2965,12 @@ void visualisation_thread()
                         double Ti_lo = Ri_lo + png_offset_x / Rwdivi;
                         double Ti_up = Ti_lo + Tw / Rwdivi;
                         sprintf(filename, "%s/T%ix%i %05i %05i W(%.6f %.6f %.1f).png", dirname, Tw, Th, png_offset_y, png_offset_x, 0.5 * (Tr_lo + Tr_up), 0.5 * (Ti_lo + Ti_up), 4.0 / (Tr_up - Tr_lo));
-                        TtoPNG(filename, png_offset_x, png_offset_y, Tw, Th);
+                        writeTtoPNG(filename, png_offset_x, png_offset_y, Tw, Th);
                     }
                 }
             }
 
-            if (autowriteRtoB && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
-                long long unsigned int Ppsum = 0;
-
-                for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    Ppsum += Pp[td_i];
-                }
-
+            if ((autoRtoPNG && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
                 }
@@ -2882,11 +2983,15 @@ void visualisation_thread()
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
-                RtoPNG(filename);
+                writeRtoPNG(filename);
             }
 
-            if ((autowriteWtoB || autowriteRtoBtiled || autowriteRtoB) && ((t_lastB != 0 && (SDL_GetTicks() - t_lastB > t_deltaB)) || (t_lastB == 0 && (SDL_GetTicks() > t_initB)))) {
-                t_lastB = SDL_GetTicks();
+            if ((autoWtoPNG == 1 || autoRTtoPNG == 1 || autoRtoPNG == 1) && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) {
+                t_autoPNG_last = SDL_GetTicks();
+            }
+
+            if ((autoWtoPNG == 2 || autoRTtoPNG == 2 || autoRtoPNG == 2) && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta)) {
+                Ppsum_autoPNG_last = Ppsum;
             }
 
             #pragma omp flush(td_pause)
@@ -2928,6 +3033,21 @@ void visualisation_thread()
                         H[0] = (unsigned int*)calloc(Hl[0], sizeof(unsigned int));
                     } else {
                         memset(H[0], 0, Hl[0] * sizeof(unsigned int));
+                    }
+
+                    Rlrmax[1] = 0;
+                    Rlrmax[2] = 0;
+                    Hl[1] = 0;
+                    Hl[2] = 0;
+
+                    if (H[1] != NULL) {
+                        free(H[1]);
+                        H[1] = NULL;
+                    }
+
+                    if (H[2] != NULL) {
+                        free(H[2]);
+                        H[2] = NULL;
                     }
 
                     for (int Wy = 0; Wy < Wh; Wy++) {
@@ -3189,16 +3309,10 @@ void visualisation_thread()
                 }
             }
 
-            long long unsigned int Ppsum = 0;
-
-            for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                Ppsum += Pp[td_i];
-            }
-
             if (titlebarswitch == 0) {
                 sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)Ppsum);
             } else {
-                sprintf(titlebar, "R%ix%i T%ix%i auto%i%i%i th%i %g", Rw, Rh, Tw, Th, autowriteWtoB, autowriteRtoBtiled, autowriteRtoB, td_nb, (double)Ppsum);
+                sprintf(titlebar, "lm%i R%ix%i T%ix%i autopng%i%i%i delta %.0e %.0e th%i Rmax %g Pp %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, td_nb, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), (double)Ppsum);
             }
 
             SDL_SetWindowTitle(sdl_window, titlebar);
@@ -3236,7 +3350,7 @@ int main(int argc, char* argv[])
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));
-        H[layer_iter] = (unsigned int*)calloc(Hl[layer_iter], sizeof(unsigned int));
+        H[layer_iter] = NULL;
     }
 
     #pragma omp parallel sections num_threads(TD_MAX + 1)
