@@ -63,7 +63,7 @@ Uint32 t_autoPNG_delta = 6e5; // time between each auto PNG write, default 10min
 
 //// auto write mode 2
 long long unsigned int Ppsum_autoPNG_last = 0; // Ppsum of last written auto PNG
-long long unsigned int Ppsum_autoPNG_delta = 1e9; // Ppsum difference between each auto PNG write, default 1e9
+long long unsigned int Ppsum_autoPNG_delta = 1e10; // Ppsum difference between each auto PNG write, default 1e9
 
 //// td threads
 #define TD_MAX 18 // maximum number of calc threads
@@ -127,8 +127,8 @@ int bb_minn[TD_MAX]; // path minimum n_inf : plot path only if n_inf >= bb_minn 
 //// registers the number of times a path passed in a pixel
 //// mapped in a complex rectangle
 unsigned int* R[TD_MAX]; // 1 render , per thread
-int Rw; // render width
-int Rh; // render height
+int Rw = 0; // render width
+int Rh = 0; // render height
 
 unsigned int Rlrmax[LR_NB]; // maximum count , per layer
 
@@ -156,8 +156,8 @@ unsigned int Hl[LR_NB] = {0, 0, 0}; // histogram length > Rlrmax , per layer
 unsigned int* W[LR_NB]; // 1 window , per layer
 int Ww = 1000; // window width
 int Wh = 1000; // window height
-int RWox; // x offset of window in render
-int RWoy; // y offset of window in render
+int RWow = 0; // x offset of window in render
+int RWoh = 0; // y offset of window in render
 
 double Wr_lo, Wr_up; // real lower and upper bound of rectangle W in complex plane
 double Wi_lo, Wi_up; // imaginary lower and upper bound of rectangle W in complex plane
@@ -514,74 +514,60 @@ void increase_num_calcthreads()
     #pragma omp flush(td_nb)
 }
 
-void load_location(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh)
+void load_location(int pause_calcthreads, double load_zoom, double load_centerx, double load_centery, int load_renderw, int load_renderh)
 {
     if (pause_calcthreads) {
         pause_calcthreads_and_wait();
     }
 
-    if (zoom > 0.0) {
-        double rangediv2 = 2.0 / zoom;
-        x_u = x_l + rangediv2;
-        x_l = x_l - rangediv2;
-        y_u = y_l + rangediv2;
-        y_l = y_l - rangediv2;
-    }
-
-    Rr_lo = x_l;
-    Rr_up = x_u;
-    Ri_lo = y_l;
-    Ri_up = y_u;
+    double rangediv2 = 2.0 / load_zoom;
+    Rr_lo = load_centerx - rangediv2;
+    Rr_up = load_centerx + rangediv2;
+    Ri_lo = load_centery - rangediv2;
+    Ri_up = load_centery + rangediv2;
     Rr_ra = Rr_up - Rr_lo;
     Ri_ra = Ri_up - Ri_lo;
 
-    if (Rw == cmw && Rh == cmh) {
-        RWox = 0;
-        RWoy = 0;
-
+    if (Rw == load_renderw && Rh == load_renderh) {
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
             reset_R(td_i);
         }
     } else {
         if (Rw == 0) {
-            RWox = 0;
+            RWow = 0.5 * (load_renderw - Ww);
+        } else if (Rw < load_renderw) {
+            RWow = RWow / Rw_f + 0.5 * Ww * (1.0 / Rw_f - 1.0);
         } else {
-            if (Rw < cmw) {
-                RWox = RWox / Rw_f + 0.5 * Ww * (1.0 / Rw_f - 1.0);
-            } else {
-                RWox = RWox * Rw_f + 0.5 * Ww * (Rw_f - 1.0);
-            }
+            RWow = RWow * Rw_f + 0.5 * Ww * (Rw_f - 1.0);
         }
 
         if (Rh == 0) {
-            RWoy = 0;
+            RWoh = 0.5 * (load_renderh - Wh);
+        } else if (Rh < load_renderh) {
+            RWoh = RWoh / Rh_f + 0.5 * Wh * (1.0 / Rh_f - 1.0);
         } else {
-            if (Rh < cmh) {
-                RWoy = RWoy / Rh_f + 0.5 * Wh * (1.0 / Rh_f - 1.0);
-            } else {
-                RWoy = RWoy * Rh_f + 0.5 * Wh * (Rh_f - 1.0);
-            }
+            RWoh = RWoh * Rh_f + 0.5 * Wh * (Rh_f - 1.0);
         }
 
-        Rw = cmw;
-        Rh = cmh;
+        Rw = load_renderw;
+        Rh = load_renderh;
 
         if (Rw < Ww) {
             Rw = Ww;
-            RWox = 0;
-        } else if (RWox < 0) {
-            RWox = 0;
-        } else if (RWox + Ww > Rw) {
-            RWox = Rw - Ww;
+            RWow = 0;
+        } else if (RWow < 0) {
+            RWow = 0;
+        } else if (RWow + Ww > Rw) {
+            RWow = Rw - Ww;
         }
 
         if (Rh < Wh) {
             Rh = Wh;
-            RWoy = 0;
-        } else if (RWoy < 0) {
-            RWoy = 0;
-        } else if (RWoy + Wh > Rh) {
-            RWoy = Rh - Wh;
+            RWoh = 0;
+        } else if (RWoh < 0) {
+            RWoh = 0;
+        } else if (RWoh + Wh > Rh) {
+            RWoh = Rh - Wh;
         }
 
         for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -591,9 +577,9 @@ void load_location(int pause_calcthreads, double zoom, double x_l, double x_u, d
 
     Rhdivr = Rh / Rr_ra;
     Rwdivi = Rw / Ri_ra;
-    Wr_lo = Rr_lo + RWoy / Rhdivr;
+    Wr_lo = Rr_lo + RWoh / Rhdivr;
     Wr_up = Wr_lo + Wh / Rhdivr;
-    Wi_lo = Ri_lo + RWox / Rwdivi;
+    Wi_lo = Ri_lo + RWow / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
     Hl[0] = 0;
     Hl[1] = 0;
@@ -649,7 +635,7 @@ void load_bb_param(int load_selectedlayer, int load_bb_type, int load_bb_bail, i
     #pragma omp flush(td_pause)
 }
 
-void load_location_bb_color_param(int pause_calcthreads, double zoom, double x_l, double x_u, double y_l, double y_u, int cmw, int cmh, int load_lr_mode, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_cm_log1, int load_ct_o1, int load_cm2, int load_cm_log2, int load_ct_o2, int load_cm3, int load_cm_log3, int load_ct_o3)
+void load_location_bb_color_param(int pause_calcthreads, double load_zoom, double load_centerx, double load_centery, int load_renderw, int load_renderh, int load_lr_mode, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_cm_log1, int load_ct_o1, int load_cm2, int load_cm_log2, int load_ct_o2, int load_cm3, int load_cm_log3, int load_ct_o3)
 {
     if (pause_calcthreads) {
         pause_calcthreads_and_wait();
@@ -719,7 +705,7 @@ void load_location_bb_color_param(int pause_calcthreads, double zoom, double x_l
         bb_minn[td_i] = load_bb_minn3;
     }
 
-    load_location(0, zoom, x_l, x_u, y_l, y_u, cmw, cmh);
+    load_location(0, load_zoom, load_centerx, load_centery, load_renderw, load_renderh);
 
     if (pause_calcthreads) {
         td_pause = 0;
@@ -979,7 +965,7 @@ int save_param_file()
         return (0);
     }
 
-    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWox, RWoy, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb);
+    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrenderw %d\nrenderh %d\nwindowoffsetw %d\nwindowoffseth %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWow, RWoh, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb);
     fprintf(parameters_file, "\n");
 
     for (int td_i = 0; td_i < TD_MAX; td_i++) {
@@ -1006,8 +992,8 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
 
     double centerx = 0.0, centery = 0.0, zoom = 0.0;
     double windowcenterx = 0.0, windowcentery = 0.0, windowzoom = 0.0;
-    int rendersizex = 0, rendersizey = 0;
-    int windowoffsetx = 0, windowoffsety = 0;
+    int renderw = 0, renderh = 0;
+    int windowoffsetw = 0, windowoffseth = 0;
     int layermode = 0;
     int buddhatype1 = 0, bailout1 = 0, pathplotstart1 = 0, pathplotend1 = 0, pathminninf1 = 0;
     int buddhatype2 = 0, bailout2 = 0, pathplotstart2 = 0, pathplotend2 = 0, pathminninf2 = 0;
@@ -1018,7 +1004,7 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
     int coloringmethod3 = 0, coloringmethodlog3 = 0, colortableoffset3 = 0;
     int numberofcalculationthreads = 0;
 
-    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrendersizex %d\nrendersizey %d\nwindowoffsetx %d\nwindowoffsety %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &rendersizex, &rendersizey, &windowoffsetx, &windowoffsety, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &coloringmethodlog1, &colortableoffset1, &coloringmethod2, &coloringmethodlog2, &colortableoffset2, &coloringmethod3, &coloringmethodlog3, &colortableoffset3, &numberofcalculationthreads)) {}
+    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrenderw %d\nrenderh %d\nwindowoffsetw %d\nwindowoffseth %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &renderw, &renderh, &windowoffsetw, &windowoffseth, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &coloringmethodlog1, &colortableoffset1, &coloringmethod2, &coloringmethodlog2, &colortableoffset2, &coloringmethod3, &coloringmethodlog3, &colortableoffset3, &numberofcalculationthreads)) {}
 
     if (minmem == 0) {
         while (numberofcalculationthreads > td_nb) {
@@ -1034,12 +1020,12 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
         }
     }
 
-    load_location_bb_color_param(pause_calcthreads, zoom, centerx, 0.0, centery, 0.0, rendersizex, rendersizey, layermode, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, coloringmethodlog1, colortableoffset1, coloringmethod2, coloringmethodlog2, colortableoffset2, coloringmethod3, coloringmethodlog3, colortableoffset3);
-    RWox = windowoffsetx;
-    Wi_lo = Ri_lo + RWox / Rwdivi;
+    load_location_bb_color_param(pause_calcthreads, zoom, centerx, centery, renderw, renderh, layermode, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, coloringmethodlog1, colortableoffset1, coloringmethod2, coloringmethodlog2, colortableoffset2, coloringmethod3, coloringmethodlog3, colortableoffset3);
+    RWow = windowoffsetw;
+    Wi_lo = Ri_lo + RWow / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
-    RWoy = windowoffsety;
-    Wr_lo = Rr_lo + RWoy / Rhdivr;
+    RWoh = windowoffseth;
+    Wr_lo = Rr_lo + RWoh / Rhdivr;
     Wr_up = Wr_lo + Wh / Rhdivr;
 
     if (load_status_files == 1) {
@@ -1077,8 +1063,8 @@ int save_status_files()
         Rlrmax[1] = 0;
         Rlrmax[2] = 0;
 
-        for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
-            for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+        for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
+            for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
                 int Ri = Ry * Rw + Rx;
                 unsigned int sum = 0;
 
@@ -1103,8 +1089,8 @@ int save_status_files()
         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
             Rlrmax[layer_iter] = 0;
 
-            for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
-                for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+            for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
+                for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
                     int Ri = Ry * Rw + Rx;
                     unsigned int sum = 0;
 
@@ -1130,8 +1116,8 @@ int save_status_files()
         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
             Rlrmax[layer_iter] = 0;
 
-            for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
-                for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+            for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
+                for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
                     int Ri = Ry * Rw + Rx;
                     unsigned int sum = 0;
 
@@ -2617,168 +2603,168 @@ void sdl_message_check()
 
         //// increase render size
         if (sdl_event.key.keysym.sym == SDLK_PAGEUP && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up), 0, Rw / Rw_f, Rh / Rh_f);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), Rw / Rw_f, Rh / Rh_f);
         }
 
         //// decrease render size
         if (sdl_event.key.keysym.sym == SDLK_PAGEDOWN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            if ((RWox > 0) || (RWoy > 0) || (Rw > Ww) || (Rh > Wh)) {
-                load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up), 0, Rw * Rw_f, Rh * Rh_f);
+            if ((RWow > 0) || (RWoh > 0) || (Rw > Ww) || (Rh > Wh)) {
+                load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), Rw * Rw_f, Rh * Rh_f);
             }
         }
 
         //// pan window left in render, 10% of window
         if (sdl_event.key.keysym.sym == SDLK_LEFT && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWox -= Ww * 0.1;
+            RWow -= Ww * 0.1;
 
-            if (RWox < 0) {
-                RWox = 0;
+            if (RWow < 0) {
+                RWow = 0;
             }
 
-            Wi_lo = Ri_lo + RWox / Rwdivi;
+            Wi_lo = Ri_lo + RWow / Rwdivi;
             Wi_up = Wi_lo + Ww / Rwdivi;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window left in render, 1% of window
         if (sdl_event.key.keysym.sym == SDLK_LEFT && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWox -= Ww * 0.01;
+            RWow -= Ww * 0.01;
 
-            if (RWox < 0) {
-                RWox = 0;
+            if (RWow < 0) {
+                RWow = 0;
             }
 
-            Wi_lo = Ri_lo + RWox / Rwdivi;
+            Wi_lo = Ri_lo + RWow / Rwdivi;
             Wi_up = Wi_lo + Ww / Rwdivi;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window right in render, 10% of window
         if (sdl_event.key.keysym.sym == SDLK_RIGHT && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWox += Ww * 0.1;
+            RWow += Ww * 0.1;
 
-            if (RWox + Ww > Rw) {
-                RWox = Rw - Ww;
+            if (RWow + Ww > Rw) {
+                RWow = Rw - Ww;
             }
 
-            Wi_lo = Ri_lo + RWox / Rwdivi;
+            Wi_lo = Ri_lo + RWow / Rwdivi;
             Wi_up = Wi_lo + Ww / Rwdivi;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window right in render, 1% of window
         if (sdl_event.key.keysym.sym == SDLK_RIGHT && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWox += Ww * 0.01;
+            RWow += Ww * 0.01;
 
-            if (RWox + Ww > Rw) {
-                RWox = Rw - Ww;
+            if (RWow + Ww > Rw) {
+                RWow = Rw - Ww;
             }
 
-            Wi_lo = Ri_lo + RWox / Rwdivi;
+            Wi_lo = Ri_lo + RWow / Rwdivi;
             Wi_up = Wi_lo + Ww / Rwdivi;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window up in render, 10% of window
         if (sdl_event.key.keysym.sym == SDLK_UP && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWoy -= Wh * 0.1;
+            RWoh -= Wh * 0.1;
 
-            if (RWoy < 0) {
-                RWoy = 0;
+            if (RWoh < 0) {
+                RWoh = 0;
             }
 
-            Wr_lo = Rr_lo + RWoy / Rhdivr;
+            Wr_lo = Rr_lo + RWoh / Rhdivr;
             Wr_up = Wr_lo + Wh / Rhdivr;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window up in render, 1% of window
         if (sdl_event.key.keysym.sym == SDLK_UP && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWoy -= Wh * 0.01;
+            RWoh -= Wh * 0.01;
 
-            if (RWoy < 0) {
-                RWoy = 0;
+            if (RWoh < 0) {
+                RWoh = 0;
             }
 
-            Wr_lo = Rr_lo + RWoy / Rhdivr;
+            Wr_lo = Rr_lo + RWoh / Rhdivr;
             Wr_up = Wr_lo + Wh / Rhdivr;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window down in render, 10% of window
         if (sdl_event.key.keysym.sym == SDLK_DOWN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWoy += Wh * 0.1;
+            RWoh += Wh * 0.1;
 
-            if (RWoy + Wh > Rh) {
-                RWoy = Rh - Wh;
+            if (RWoh + Wh > Rh) {
+                RWoh = Rh - Wh;
             }
 
-            Wr_lo = Rr_lo + RWoy / Rhdivr;
+            Wr_lo = Rr_lo + RWoh / Rhdivr;
             Wr_up = Wr_lo + Wh / Rhdivr;
             recalc_WH_if_paused = 1;
         }
 
         //// pan window down in render, 1% of window
         if (sdl_event.key.keysym.sym == SDLK_DOWN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            RWoy += Wh * 0.01;
+            RWoh += Wh * 0.01;
 
-            if (RWoy + Wh > Rh) {
-                RWoy = Rh - Wh;
+            if (RWoh + Wh > Rh) {
+                RWoh = Rh - Wh;
             }
 
-            Wr_lo = Rr_lo + RWoy / Rhdivr;
+            Wr_lo = Rr_lo + RWoh / Rhdivr;
             Wr_up = Wr_lo + Wh / Rhdivr;
             recalc_WH_if_paused = 1;
         }
 
         //// zoom in fractal
         if (sdl_event.key.keysym.sym == SDLK_PAGEUP && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo) / Rr_f, 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo) / Rr_f, 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
         //// zoom out fractal
         if (sdl_event.key.keysym.sym == SDLK_PAGEDOWN && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo) * Rr_f, 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo) * Rr_f, 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
         //// pan fractal location left, 10% of render size
         if (sdl_event.key.keysym.sym == SDLK_LEFT && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up) - Ri_ra * 0.1, 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up) - Ri_ra * 0.1, Rw, Rh);
         }
 
         //// pan fractal location left, 1% of render size
         if (sdl_event.key.keysym.sym == SDLK_LEFT && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up) - Ri_ra * 0.01, 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up) - Ri_ra * 0.01, Rw, Rh);
         }
 
         //// pan fractal location right, 10% of render size
         if (sdl_event.key.keysym.sym == SDLK_RIGHT && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up) + Ri_ra * 0.1, 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up) + Ri_ra * 0.1, Rw, Rh);
         }
 
         //// pan fractal location right, 1% of render size
         if (sdl_event.key.keysym.sym == SDLK_RIGHT && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0, 0.5 * (Ri_lo + Ri_up) + Ri_ra * 0.01, 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up) + Ri_ra * 0.01, Rw, Rh);
         }
 
         //// pan fractal location up, 10% of render size
         if (sdl_event.key.keysym.sym == SDLK_UP && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) - Rr_ra * 0.1, 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) - Rr_ra * 0.1, 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
         //// pan fractal location up, 1% of render size
         if (sdl_event.key.keysym.sym == SDLK_UP && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) - Rr_ra * 0.01, 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) - Rr_ra * 0.01, 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
         //// pan fractal location down, 10% of render size
         if (sdl_event.key.keysym.sym == SDLK_DOWN && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) + Rr_ra * 0.1, 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) + Rr_ra * 0.1, 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
         //// pan fractal location down, 1% of render size
         if (sdl_event.key.keysym.sym == SDLK_DOWN && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) + Rr_ra * 0.01, 0, 0.5 * (Ri_lo + Ri_up), 0, Rw, Rh);
+            load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) + Rr_ra * 0.01, 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
         //// writing window to one png
@@ -2795,7 +2781,7 @@ void sdl_message_check()
                 sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
             }
 
-            writeTtoPNG(filename, RWox, RWoy, Ww, Wh);
+            writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
         }
 
         if (sdl_event.key.keysym.sym == SDLK_BACKSPACE && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
@@ -2939,7 +2925,7 @@ void visualisation_thread()
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
                 }
 
-                writeTtoPNG(filename, RWox, RWoy, Ww, Wh);
+                writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
             }
 
             if ((autoRTtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRTtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
@@ -3000,8 +2986,8 @@ void visualisation_thread()
                 if (lr_mode == 0) {
                     Rlrmax[0] = 0;
 
-                    for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
-                        for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+                    for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
+                        for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
                             int Ri = Ry * Rw + Rx;
                             unsigned int sum = 0;
 
@@ -3080,8 +3066,8 @@ void visualisation_thread()
                     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
                         Rlrmax[layer_iter] = 0;
 
-                        for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
-                            for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+                        for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
+                            for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
                                 int Ri = Ry * Rw + Rx;
                                 unsigned int sum = 0;
 
@@ -3146,8 +3132,8 @@ void visualisation_thread()
                     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
                         Rlrmax[layer_iter] = 0;
 
-                        for (int Wy = 0, Ry = RWoy; Wy < Wh; Wy++, Ry++) {
-                            for (int Wx = 0, Rx = RWox; Wx < Ww; Wx++, Rx++) {
+                        for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
+                            for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
                                 int Ri = Ry * Rw + Rx;
                                 unsigned int sum = 0;
 
@@ -3312,7 +3298,7 @@ void visualisation_thread()
             if (titlebarswitch == 0) {
                 sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)Ppsum);
             } else {
-                sprintf(titlebar, "lm%i R%ix%i T%ix%i autoPNG%i%i%i t_d%.0e Pp_d%.0e th%i Rmax %g Pp %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, td_nb, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), (double)Ppsum);
+                sprintf(titlebar, "lm%i R%ix%i T%ix%i autoPNG%i%i%i deltat%.0e deltaPp%.0e Rmax%g th%i %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), td_nb, (double)Ppsum);
             }
 
             SDL_SetWindowTitle(sdl_window, titlebar);
@@ -3346,7 +3332,7 @@ int main(int argc, char* argv[])
         td_nb = MIN(ceil((double)td_vc_nb / 3) * 3, TD_MAX);
     }
 
-    load_location_bb_color_param(0, 1.0, 0.0, 0.0, 0.0, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 10, 0, 5, 0, 0, 5, 0, 0, 5, 0);
+    load_location_bb_color_param(0, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 10, 0, 5, 0, 0, 5, 0, 0, 5, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));

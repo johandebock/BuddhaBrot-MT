@@ -1,13 +1,13 @@
-centerx 0.000000
+centerx -0.400000
 centery 0.000000
-zoom 1.000000
-windowcenterx 0.000000
+zoom 1.800000
+windowcenterx -0.400000
 windowcentery 0.000000
-windowzoom 1.000000
-rendersizex 1000
-rendersizey 1000
-windowoffsetx 0
-windowoffsety 0
+windowzoom 1.800000
+renderw 1000
+renderh 1000
+windowoffsetw 0
+windowoffseth 0
 
 layermode 0
 
