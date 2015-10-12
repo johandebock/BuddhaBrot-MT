@@ -66,4 +66,6 @@ pathsplottedthread17 0
 
 pathsplottedsum 0
 
-rendercountmatrixmax 0
+rendercountmatrixmax1 0
+rendercountmatrixmax2 0
+rendercountmatrixmax3 0
