@@ -44,11 +44,11 @@ SDL_Event sdl_event;
 //// keep total number of paths plotted for a render
 long long unsigned int Ppsum;
 
-//// fps frames per second regulation
+//// fps frames per second functionality
 double fps = 1.0;
 Uint32 t_last_frame = 0; // time last frame was rendered
 
-//// auto write PNG regulation
+//// auto write PNG functionality
 //// auto write mode 0 : no auto write
 //// auto write mode 1 : auto write based on time
 //// auto write mode 2 : auto write based on Ppsum
@@ -200,6 +200,10 @@ int ct_type; // color table type
 int ct_e; // last index in color table = len - 1
 int ct_o[LR_NB]; // start offset in ct (0 index gets mapped on this color) , per layer
 int ct_v[LR_NB] = {0, 0, 0}; // cycle speed : diff per frame in index, per layer
+
+//// plc permutate layer color functionality
+int plc = 0;
+#define PLC_NB 6
 
 
 
@@ -2599,6 +2603,57 @@ void sdl_message_check()
 
         if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_v[2] = 0;
+        }
+
+        //// permutate layer color
+        if (sdl_event.key.keysym.sym == SDLK_TAB && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            if (plc == 0 || plc == 3) {
+                int tmp_cm = cm[0];
+                unsigned int tmp_cm_log = cm_log[0];
+                int tmp_ct_o = ct_o[0];
+                int tmp_ct_v = ct_v[0];
+                cm[0] = cm[1];
+                cm_log[0] = cm_log[1];
+                ct_o[0] = ct_o[1];
+                ct_v[0] = ct_v[1];
+                cm[1] = tmp_cm;
+                cm_log[1] = tmp_cm_log;
+                ct_o[1] = tmp_ct_o;
+                ct_v[1] = tmp_ct_v;
+            }
+
+            if (plc == 1 || plc == 4) {
+                int tmp_cm = cm[1];
+                unsigned int tmp_cm_log = cm_log[1];
+                int tmp_ct_o = ct_o[1];
+                int tmp_ct_v = ct_v[1];
+                cm[1] = cm[2];
+                cm_log[1] = cm_log[2];
+                ct_o[1] = ct_o[2];
+                ct_v[1] = ct_v[2];
+                cm[2] = tmp_cm;
+                cm_log[2] = tmp_cm_log;
+                ct_o[2] = tmp_ct_o;
+                ct_v[2] = tmp_ct_v;
+            }
+
+            if (plc == 2 || plc == 5) {
+                int tmp_cm = cm[0];
+                unsigned int tmp_cm_log = cm_log[0];
+                int tmp_ct_o = ct_o[0];
+                int tmp_ct_v = ct_v[0];
+                cm[0] = cm[2];
+                cm_log[0] = cm_log[2];
+                ct_o[0] = ct_o[2];
+                ct_v[0] = ct_v[2];
+                cm[2] = tmp_cm;
+                cm_log[2] = tmp_cm_log;
+                ct_o[2] = tmp_ct_o;
+                ct_v[2] = tmp_ct_v;
+            }
+
+            plc = (plc + 1) % PLC_NB;
+            recalc_WH_if_paused = 1;
         }
 
         //// increase render size
