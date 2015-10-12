@@ -50,8 +50,8 @@ Uint32 t_last_frame = 0; // time last frame was rendered
 
 //// auto write PNG regulation
 //// auto write mode 0 : no auto write
-//// auto write mode 1 : auto write based on elapsed time
-//// auto write mode 2 : auto write based on number of paths plotted
+//// auto write mode 1 : auto write based on time
+//// auto write mode 2 : auto write based on Ppsum
 int autoWtoPNG = 0; // auto write window to one png
 int autoRTtoPNG = 0; // auto write tiled render to multiple pngs
 int autoRtoPNG = 0; // auto write render to one png
@@ -62,8 +62,8 @@ Uint32 t_autoPNG_last = 0; // time last auto PNG was written
 Uint32 t_autoPNG_delta = 6e5; // time between each auto PNG write, default 10min
 
 //// auto write mode 2
-long long unsigned int Ppsum_autoPNG_last = 0; // Ppsum for last written auto PNG
-long long unsigned int Ppsum_autoPNG_delta = 1e9; // Ppsum difference between each written auto PNG, default 1e9
+long long unsigned int Ppsum_autoPNG_last = 0; // Ppsum of last written auto PNG
+long long unsigned int Ppsum_autoPNG_delta = 1e9; // Ppsum difference between each auto PNG write, default 1e9
 
 //// td threads
 #define TD_MAX 18 // maximum number of calc threads
@@ -2970,7 +2970,7 @@ void visualisation_thread()
                 }
             }
 
-            if ((autoRtoPNG && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
+            if ((autoRtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
                 }
@@ -3312,7 +3312,7 @@ void visualisation_thread()
             if (titlebarswitch == 0) {
                 sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)Ppsum);
             } else {
-                sprintf(titlebar, "lm%i R%ix%i T%ix%i autopng%i%i%i delta %.0e %.0e th%i Rmax %g Pp %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, td_nb, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), (double)Ppsum);
+                sprintf(titlebar, "lm%i R%ix%i T%ix%i autoPNG%i%i%i t_d%.0e Pp_d%.0e th%i Rmax %g Pp %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, td_nb, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), (double)Ppsum);
             }
 
             SDL_SetWindowTitle(sdl_window, titlebar);
