@@ -198,6 +198,7 @@ int ct_type; // color table type
 #define CT_NONCYCLE_NB 8 // number of noncycle color table types : 1X
 #define CT_CYCLE_NB 3 // number of cycle color table types : 2X
 int ct_e; // last index in color table = len - 1
+double ct_f[LR_NB] = {1.0, 1.0, 1.0}; // linear histogram transform with clipping
 int ct_o[LR_NB]; // start offset in ct (0 index gets mapped on this color) , per layer
 int ct_v[LR_NB] = {0, 0, 0}; // cycle speed : diff per frame in index, per layer
 
@@ -1502,7 +1503,7 @@ void writeRtoPNG(const char* filename)
                     int ct_i = 0;
 
                     if (cm0n[0] > 1) {
-                        ct_i = ct_e * ((double)H[0][sum] / (cm0n[0] - 1));
+                        ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)H[0][sum] / (cm0n[0] - 1)));
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0]);
@@ -1537,7 +1538,7 @@ void writeRtoPNG(const char* filename)
                     int ct_i = 0;
 
                     if (cm1n[0] > 0) {
-                        ct_i = ct_e * ((double)H[0][sum] / cm1n[0]);
+                        ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)H[0][sum] / cm1n[0]));
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0]);
@@ -1575,13 +1576,13 @@ void writeRtoPNG(const char* filename)
 
                     if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
                         if (cm0n[layer_iter] > 1) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][sum] / (cm0n[layer_iter] - 1));
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
                     if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
                         if (cm1n[layer_iter] > 0) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]);
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]));
                         }
                     }
 
@@ -1621,13 +1622,13 @@ void writeRtoPNG(const char* filename)
 
                     if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
                         if (cm0n[layer_iter] > 1) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][sum] / (cm0n[layer_iter] - 1));
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
                     if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
                         if (cm1n[layer_iter] > 0) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]);
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]));
                         }
                     }
 
@@ -1895,7 +1896,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                     int ct_i = 0;
 
                     if (cm0n[0] > 1) {
-                        ct_i = ct_e * ((double)H[0][T[0][png_y * local_png_width + png_x]] / (cm0n[0] - 1));
+                        ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)H[0][T[0][png_y * local_png_width + png_x]] / (cm0n[0] - 1)));
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0]);
@@ -1917,7 +1918,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                     int ct_i = 0;
 
                     if (cm1n[0] > 0) {
-                        ct_i = ct_e * ((double)H[0][T[0][png_y * local_png_width + png_x]] / cm1n[0]);
+                        ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)H[0][T[0][png_y * local_png_width + png_x]] / cm1n[0]));
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0]);
@@ -1942,13 +1943,13 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
                     if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
                         if (cm0n[layer_iter] > 1) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / (cm0n[layer_iter] - 1));
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
                     if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
                         if (cm1n[layer_iter] > 0) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]);
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]));
                         }
                     }
 
@@ -1975,13 +1976,13 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
                     if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
                         if (cm0n[layer_iter] > 1) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / (cm0n[layer_iter] - 1));
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
                     if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
                         if (cm1n[layer_iter] > 0) {
-                            ct_i[layer_iter] = ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]);
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]));
                         }
                     }
 
@@ -2605,6 +2606,64 @@ void sdl_message_check()
             ct_v[2] = 0;
         }
 
+        //// change ct_f layer 123
+        if (sdl_event.key.keysym.sym == SDLK_8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[0] += 0.1;
+            ct_f[1] = ct_f[0];
+            ct_f[2] = ct_f[0];
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_8 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[0] -= 0.1;
+            ct_f[1] = ct_f[0];
+            ct_f[2] = ct_f[0];
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[0] = 1.0;
+            ct_f[1] = 1.0;
+            ct_f[2] = 1.0;
+        }
+
+        //// change ct_f layer 1
+        if (sdl_event.key.keysym.sym == SDLK_i && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[0] += 0.1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_i && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[0] -= 0.1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_i && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[0] = 1.0;
+        }
+
+        //// change ct_f layer 2
+        if (sdl_event.key.keysym.sym == SDLK_k && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[1] += 0.1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_k && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[1] -= 0.1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_k && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[1] = 1.0;
+        }
+
+        //// change ct_f layer 3
+        if (sdl_event.key.keysym.sym == SDLK_COMMA && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[2] += 0.1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_COMMA && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[2] -= 0.1;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_COMMA && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_f[2] = 1.0;
+        }
+
         //// permutate layer color
         if (sdl_event.key.keysym.sym == SDLK_TAB && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (plc == 0 || plc == 3) {
@@ -2825,15 +2884,15 @@ void sdl_message_check()
         //// writing window to one png
         if (sdl_event.key.keysym.sym == SDLK_BACKSPACE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
             }
 
             writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
@@ -2846,15 +2905,15 @@ void sdl_message_check()
         //// writing tiled render to multiple pngs
         if (sdl_event.key.keysym.sym == SDLK_BACKSLASH && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (lr_mode == 0) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, Tw, Th, (double)Ppsum);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
             }
 
             sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -2879,15 +2938,15 @@ void sdl_message_check()
         //// writing render to one png
         if (sdl_event.key.keysym.sym == SDLK_RETURN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
             }
 
             writeRtoPNG(filename);
@@ -2969,15 +3028,15 @@ void visualisation_thread()
 
             if ((autoWtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoWtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
                 }
 
                 writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
@@ -2985,15 +3044,15 @@ void visualisation_thread()
 
             if ((autoRTtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRTtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, Tw, Th, (double)Ppsum);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
                 }
 
                 sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -3013,15 +3072,15 @@ void visualisation_thread()
 
             if ((autoRtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], Rw, Rh, (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], Rw, Rh, (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
                 }
 
                 writeRtoPNG(filename);
@@ -3261,7 +3320,7 @@ void visualisation_thread()
                             int ct_i = 0;
 
                             if (cm0n[0] > 1) {
-                                ct_i = ct_e * ((double)H[0][W[0][Wy * Ww + Wx]] / (cm0n[0] - 1));
+                                ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)H[0][W[0][Wy * Ww + Wx]] / (cm0n[0] - 1)));
                             }
 
                             ct_i = ct_cycle(ct_i + ct_o[0]);
@@ -3277,7 +3336,7 @@ void visualisation_thread()
                             int ct_i = 0;
 
                             if (cm1n[0] > 0) {
-                                ct_i = ct_e * ((double)H[0][W[0][Wy * Ww + Wx]] / cm1n[0]);
+                                ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)H[0][W[0][Wy * Ww + Wx]] / cm1n[0]));
                             }
 
                             ct_i = ct_cycle(ct_i + ct_o[0]);
@@ -3300,13 +3359,13 @@ void visualisation_thread()
                         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
                             if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
                                 if (cm0n[layer_iter] > 1) {
-                                    ct_i[layer_iter] = ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / (cm0n[layer_iter] - 1));
+                                    ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / (cm0n[layer_iter] - 1)));
                                 }
                             }
 
                             if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
                                 if (cm1n[layer_iter] > 0) {
-                                    ct_i[layer_iter] = ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]);
+                                    ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]));
                                 }
                             }
 
@@ -3331,13 +3390,13 @@ void visualisation_thread()
                         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
                             if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
                                 if (cm0n[layer_iter] > 1) {
-                                    ct_i[layer_iter] = ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / (cm0n[layer_iter] - 1));
+                                    ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / (cm0n[layer_iter] - 1)));
                                 }
                             }
 
                             if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
                                 if (cm1n[layer_iter] > 0) {
-                                    ct_i[layer_iter] = ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]);
+                                    ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]));
                                 }
                             }
 
@@ -3351,7 +3410,7 @@ void visualisation_thread()
             }
 
             if (titlebarswitch == 0) {
-                sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i cm.%i.%i.%i cm%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb, (double)Ppsum);
+                sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), td_nb, (double)Ppsum);
             } else {
                 sprintf(titlebar, "lm%i R%ix%i T%ix%i autoPNG%i%i%i deltat%.0e deltaPp%.0e Rmax%g th%i %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), td_nb, (double)Ppsum);
             }
