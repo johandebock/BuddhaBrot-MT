@@ -11,13 +11,13 @@
 \begin{center}{\Huge BuddhaBrot-MT manual}\end{center}
 
 \begin{table}[h!]
-    \caption{Changing layer mode, changing color table (noncycle and cycle) (ct), changing BuddhaBrot (bb) type (0=BuddhaBrot, 1=Anti-Buddhabrot, 2=Anti-Buddhabrot with some lobes cut), permutating layer color, toggling info displayed in title bar}
+    \caption{Changing layer mode, changing color table (noncycle and cycle) (ct), changing BuddhaBrot (bb) type (0=BuddhaBrot, 1=Anti-Buddhabrot, 2=Anti-Buddhabrot with some lobes cut), permutating layer color, changing info displayed in title bar}
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLLLL}
         \toprule
-                   & F1          & F2          & F3       & `       & Tab              & Esc              \\
+                   & F1          & F2          & F3       & `       & Tab              & Esc            \\
         \midrule                                                                       
-        -          & layer mode  & noncycle ct & cycle ct & bb type & perm layer color & toggle title bar \\
+        -          & layer mode  & noncycle ct & cycle ct & bb type & perm layer color & title bar info \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -37,11 +37,11 @@
 \end{table}
 
 \begin{table}[h!]
-    \caption{Writing window, tiled (T) render, full render to PNG in working directory, changing auto write mode (awm) (0=no auto write, 1=auto write based on elapsed time, 2=auto write based on number of paths plotted)}
+    \caption{Writing window, tiled (T) render, full render to PNG in working directory, changing auto write mode (awm) (0=no auto write, 1=auto write based on elapsed time, 2=auto write based on number of paths plotted), changing tile size}
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLLL}
         \toprule
-                   & Backspace    & \textbackslash     & Return       & [           & ]            \\
+                   & Backspace    & \textbackslash     & Return       & ;           & '            \\
         \midrule
         -          & write window & write render tiled & write render & inc T width & inc T height \\
         Shift      & awm window   & awm render tiled   & awm render   & dec T width & dec T height \\
@@ -54,7 +54,7 @@
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
-                   & -                  & =                  & ;                   & '                   \\
+                   & -                  & =                  & [                   & ]                   \\
         \midrule
         -          & $t_\Delta$ $/$= 10 & $t_\Delta$ $*$= 10 & $Pp_\Delta$ $/$= 10 & $Pp_\Delta$ $*$= 10 \\
         \bottomrule
@@ -137,16 +137,43 @@
 \end{table}
 
 \begin{table}[h!]
-    \caption{Changing coloring method (cm) (0=rank-order mapping, 1=histogram mapping, 2=log+rank-order mapping, 3=log+histogram mapping), changing logarithmic offset for coloring methods 23 (log)}
+    \caption{Changing coloring method (cm) (0=rank-order mapping, 1=histogram mapping), changing coloring sum function (csf) (0=none, 1=log)}
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
-                   & 5                    & t                  & g                  & b                  \\
+                   & 5             & t           & g           & b           \\
         \midrule
-        -          & layer 123 normal cm  & layer 1 normal cm  & layer 2 normal cm  & layer 3 normal cm  \\
-        Shift      & layer 123 log cm     & layer 1 log cm     & layer 2 log cm     & layer 3 log cm     \\
-        Ctrl       & layer 123 log $+$= 1 & layer 1 log $+$= 1 & layer 2 log $+$= 1 & layer 3 log $+$= 1 \\
-        Shift+Ctrl & layer 123 log $-$= 1 & layer 1 log $-$= 1 & layer 2 log $-$= 1 & layer 3 log $-$= 1 \\
+        -          & layer 123 cm  & layer 1 cm  & layer 2 cm  & layer 3 cm  \\
+        Shift      & layer 123 csf & layer 1 csf & layer 2 csf & layer 3 csf \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[h!]
+    \caption{Changing coloring sum function parameter1 (csfp1)}
+    \setlength{\tabcolsep}{0.0pt}
+    \begin{tabularx}{\linewidth}{LLLLL}
+        \toprule
+                   & 6                       & y                     & h                     & n                     \\
+        \midrule
+        -          & layer 123 csfp1 $+$= 1  & layer 1 csfp1 $+$= 1  & layer 2 csfp1 $+$= 1  & layer 3 csfp1 $+$= 1  \\
+        Shift      & layer 123 csfp1 $*$= 10 & layer 1 csfp1 $*$= 10 & layer 2 csfp1 $*$= 10 & layer 3 csfp1 $*$= 10 \\
+        Ctrl       & layer 123 csfp1 $-$= 1  & layer 1 csfp1 $-$= 1  & layer 2 csfp1 $-$= 1  & layer 3 csfp1 $-$= 1  \\
+        Shift+Ctrl & layer 123 csfp1 $/$= 10 & layer 1 csfp1 $/$= 10 & layer 2 csfp1 $/$= 10 & layer 3 csfp1 $/$= 10 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\begin{table}[h!]
+    \caption{Changing scale factor of index in color table (ct\_f)}
+    \setlength{\tabcolsep}{0.0pt}
+    \begin{tabularx}{\linewidth}{LLLLL}
+        \toprule
+                   & 7                        &  u                     & j                      & m                      \\
+        \midrule
+        -          & layer 123 ct\_f $+$= 0.1 & layer 1 ct\_f $+$= 0.1 & layer 2 ct\_f $+$= 0.1 & layer 3 ct\_f $+$= 0.1 \\
+        Shift      & layer 123 ct\_f $-$= 0.1 & layer 1 ct\_f $-$= 0.1 & layer 2 ct\_f $-$= 0.1 & layer 3 ct\_f $-$= 0.1 \\
+        Ctrl       & layer 123 ct\_f = 1.0    & layer 1 ct\_f = 1.0    & layer 2 ct\_f = 1.0    & layer 3 ct\_f = 1.0    \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -156,7 +183,7 @@
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
-                   & 6                       & y                     & h                     & n                     \\
+                   & 8                       & i                     & k                     & ,                     \\
         \midrule
         -          & layer 123 ct\_o $+$= 1  & layer 1 ct\_o $+$= 1  & layer 2 ct\_o $+$= 1  & layer 3 ct\_o $+$= 1  \\
         Shift      & layer 123 ct\_o $+$= 10 & layer 1 ct\_o $+$= 10 & layer 2 ct\_o $+$= 10 & layer 3 ct\_o $+$= 10 \\
@@ -170,7 +197,7 @@
     \setlength{\tabcolsep}{0.0pt}
     \begin{tabularx}{\linewidth}{LLLLL}
         \toprule
-                   & 7                      & u                    & j                    & m                    \\
+                   & 9                      & o                    & l                    & .                    \\
         \midrule
         -          & layer 123 ct\_v $+$= 1 & layer 1 ct\_v $+$= 1 & layer 2 ct\_v $+$= 1 & layer 3 ct\_v $+$= 1 \\
         Shift      & layer 123 ct\_v $-$= 1 & layer 1 ct\_v $-$= 1 & layer 2 ct\_v $-$= 1 & layer 3 ct\_v $-$= 1 \\

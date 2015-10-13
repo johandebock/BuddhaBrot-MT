@@ -28,7 +28,8 @@
 
 //// strings
 char titlebar[512];
-int titlebarswitch = 0;
+int tbs = 0; // title bar switch
+#define TBS_NB 3
 char filename[512];
 char dirname[512];
 char commandname[512];
@@ -130,7 +131,7 @@ unsigned int* R[TD_MAX]; // 1 render , per thread
 int Rw = 0; // render width
 int Rh = 0; // render height
 
-unsigned int Rlrmax[LR_NB]; // maximum count , per layer
+unsigned int Rlrmax[LR_NB]; // maximum count sum , per layer
 
 double Rr_lo, Rr_up; // real lower and upper bound of rectangle R in complex plane
 double Rr_ra; // real range of rectangle R in complex plane
@@ -174,33 +175,36 @@ int Th = 1000; // tile height
 //// cm coloring methods
 //// coloring method 0 : rank-order mapping
 //// coloring method 1 : histogram mapping
-//// coloring method 0 : if cm0n > 1 ? ci = ct_e * H[count] / (cm0n - 1) : ci = ct_s TODO
-//// coloring method 1 : if cm1n > 0 ? ci = ct_e * H[count] / cm1n : ci = ct_s TODO check ct_e * () in code
-//// coloring method 2 : 0 , log
-//// coloring method 3 : 1 , log
-//// log : if count >= cm_log ? count = cm_log + log(count - cm_log + 1) : count = count
+//// coloring method 0 : if cm0n > 1 : ct_i = ct_e * H[sum] / (cm0n - 1)
+//// coloring method 0 : else          ct_i = ct_s                               TODO
+//// coloring method 1 : if cm1n > 0 : ct_i = ct_e * H[sum] / cm1n :
+//// coloring method 1 : else          ct_i = ct_s                               TODO check ct_e * () in code
 int cm[LR_NB]; // coloring method , per layer
-#define CM_NORMAL_NB 2 // number of normal coloring methods
-#define CM_LOG_NB 2 // number of normal coloring methods
-unsigned int cm_log[LR_NB]; // logarithmic when >= cm_log
-int cm0n[LR_NB]; // normalization value for coloring method 0 2 = number of filled bins in histogram = number of unique values in render
-int cm1n[LR_NB]; // normalization value for coloring method 1 3 = (number of pixels in render - number of 0 pixels in render)
+#define CM_NB 2 // number of coloring methods
+int cm0n[LR_NB]; // normalization value for coloring method 0 = number of filled bins in histogram = number of unique values in render , per layer
+int cm1n[LR_NB]; // normalization value for coloring method 1 = (number of pixels in render - number of 0 pixels in render) , per layer
+
+//// csf coloring sum function
+//// sum function 0 : none
+//// sum function 1 : log
+//// sum function 0 : sum -> sum
+//// sum function 1 : if sum >= (unsigned int)csfp1 : sum -> csfp1 + log(sum - csfp1 + 1)
+//// sum function 1 : else              sum -> sum
+int csf[LR_NB]; // coloring sum function , per layer
+#define CSF_NB 2 // number of coloring sum functions
+int csfp1[LR_NB]; // parameter 1 , per layer
 
 //// CT color tables
-//// index -> RGB/Grey value
-//// color table type 0 : Grey : 0->255->0 0->255->0 0->255->0
-//// color table type 1 : Grey : 0->255 0->255 0->255
-//// color table type 2 : Grey : 255->0 255->0 255->0
-//// color table type 3 : RGB : 0->R->RG->RGB->RG->R->0
+//// index -> RGB value
 typedef unsigned char rgb[3]; // an RGB value
 rgb* CT; // 1 color table
 int ct_type; // color table type
 #define CT_NONCYCLE_NB 8 // number of noncycle color table types : 1X
 #define CT_CYCLE_NB 3 // number of cycle color table types : 2X
 int ct_e; // last index in color table = len - 1
-double ct_f[LR_NB] = {1.0, 1.0, 1.0}; // linear histogram transform with clipping
-int ct_o[LR_NB]; // start offset in ct (0 index gets mapped on this color) , per layer
-int ct_v[LR_NB] = {0, 0, 0}; // cycle speed : diff per frame in index, per layer
+double ct_f[LR_NB] = {1.0, 1.0, 1.0}; // scale index in color table with this factor (with clipping) ct_i = MIN(ct_e, ct_f * ct_i) , per layer
+int ct_o[LR_NB]; // start offset in color table (0 index gets mapped on this color) , per layer
+int ct_v[LR_NB] = {0, 0, 0}; // cycle speed : diff per frame in index , per layer
 
 //// plc permutate layer color functionality
 int plc = 0;
@@ -640,7 +644,7 @@ void load_bb_param(int load_selectedlayer, int load_bb_type, int load_bb_bail, i
     #pragma omp flush(td_pause)
 }
 
-void load_location_bb_color_param(int pause_calcthreads, double load_zoom, double load_centerx, double load_centery, int load_renderw, int load_renderh, int load_lr_mode, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_cm_log1, int load_ct_o1, int load_cm2, int load_cm_log2, int load_ct_o2, int load_cm3, int load_cm_log3, int load_ct_o3)
+void load_location_bb_color_param(int pause_calcthreads, double load_zoom, double load_centerx, double load_centery, int load_renderw, int load_renderh, int load_lr_mode, int load_bb_type1, int load_bb_bail1, int load_bb_pps1, int load_bb_ppe1, int load_bb_minn1, int load_bb_type2, int load_bb_bail2, int load_bb_pps2, int load_bb_ppe2, int load_bb_minn2, int load_bb_type3, int load_bb_bail3, int load_bb_pps3, int load_bb_ppe3, int load_bb_minn3, int load_ct_type, int load_cm1, int load_csf1, int load_csfp11, double load_ct_f1, int load_ct_o1, int load_cm2, int load_csf2, int load_csfp12, double load_ct_f2, int load_ct_o2, int load_cm3, int load_csf3, int load_csfp13, double load_ct_f3, int load_ct_o3)
 {
     if (pause_calcthreads) {
         pause_calcthreads_and_wait();
@@ -664,9 +668,15 @@ void load_location_bb_color_param(int pause_calcthreads, double load_zoom, doubl
     cm[0] = load_cm1;
     cm[1] = load_cm2;
     cm[2] = load_cm3;
-    cm_log[0] = load_cm_log1;
-    cm_log[1] = load_cm_log2;
-    cm_log[2] = load_cm_log3;
+    csf[0] = load_csf1;
+    csf[1] = load_csf2;
+    csf[2] = load_csf3;
+    csfp1[0] = load_csfp11;
+    csfp1[1] = load_csfp12;
+    csfp1[2] = load_csfp13;
+    ct_f[0] = load_ct_f1;
+    ct_f[1] = load_ct_f2;
+    ct_f[2] = load_ct_f3;
     ct_o[0] = load_ct_o1;
     ct_o[1] = load_ct_o2;
     ct_o[2] = load_ct_o3;
@@ -970,7 +980,7 @@ int save_param_file()
         return (0);
     }
 
-    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrenderw %d\nrenderh %d\nwindowoffsetw %d\nwindowoffseth %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWow, RWoh, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], cm_log[0], ct_o[0], cm[1], cm_log[1], ct_o[1], cm[2], cm_log[2], ct_o[2], td_nb);
+    fprintf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrenderw %d\nrenderh %d\nwindowoffsetw %d\nwindowoffseth %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringsumfunc1 %d\ncoloringsumfuncparam11 %d\ncolortablescale1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringsumfunc2 %d\ncoloringsumfuncparam12 %d\ncolortablescale2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringsumfunc3 %d\ncoloringsumfuncparam13 %d\ncolortablescale3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), Rw, Rh, RWow, RWoh, lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], td_nb);
     fprintf(parameters_file, "\n");
 
     for (int td_i = 0; td_i < TD_MAX; td_i++) {
@@ -1004,12 +1014,12 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
     int buddhatype2 = 0, bailout2 = 0, pathplotstart2 = 0, pathplotend2 = 0, pathminninf2 = 0;
     int buddhatype3 = 0, bailout3 = 0, pathplotstart3 = 0, pathplotend3 = 0, pathminninf3 = 0;
     int colortabletype = 0;
-    int coloringmethod1 = 0, coloringmethodlog1 = 0, colortableoffset1 = 0;
-    int coloringmethod2 = 0, coloringmethodlog2 = 0, colortableoffset2 = 0;
-    int coloringmethod3 = 0, coloringmethodlog3 = 0, colortableoffset3 = 0;
+    int coloringmethod1 = 0, coloringsumfunc1 = 0, coloringsumfuncparam11 = 0, colortablescale1 = 0, colortableoffset1 = 0;
+    int coloringmethod2 = 0, coloringsumfunc2 = 0, coloringsumfuncparam12 = 0, colortablescale2 = 0, colortableoffset2 = 0;
+    int coloringmethod3 = 0, coloringsumfunc3 = 0, coloringsumfuncparam13 = 0, colortablescale3 = 0, colortableoffset3 = 0;
     int numberofcalculationthreads = 0;
 
-    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrenderw %d\nrenderh %d\nwindowoffsetw %d\nwindowoffseth %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringmethodlog1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringmethodlog2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringmethodlog3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &renderw, &renderh, &windowoffsetw, &windowoffseth, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &coloringmethodlog1, &colortableoffset1, &coloringmethod2, &coloringmethodlog2, &colortableoffset2, &coloringmethod3, &coloringmethodlog3, &colortableoffset3, &numberofcalculationthreads)) {}
+    if (fscanf(parameters_file, "centerx %lf\ncentery %lf\nzoom %lf\nwindowcenterx %lf\nwindowcentery %lf\nwindowzoom %lf\nrenderw %d\nrenderh %d\nwindowoffsetw %d\nwindowoffseth %d\n\nlayermode %d\n\nbuddhatype1 %d\nbailout1 %d\npathplotstart1 %d\npathplotend1 %d\npathminninf1 %d\n\nbuddhatype2 %d\nbailout2 %d\npathplotstart2 %d\npathplotend2 %d\npathminninf2 %d\n\nbuddhatype3 %d\nbailout3 %d\npathplotstart3 %d\npathplotend3 %d\npathminninf3 %d\n\ncolortabletype %d\n\ncoloringmethod1 %d\ncoloringsumfunc1 %d\ncoloringsumfuncparam11 %d\ncolortablescale1 %d\ncolortableoffset1 %d\n\ncoloringmethod2 %d\ncoloringsumfunc2 %d\ncoloringsumfuncparam12 %d\ncolortablescale2 %d\ncolortableoffset2 %d\n\ncoloringmethod3 %d\ncoloringsumfunc3 %d\ncoloringsumfuncparam13 %d\ncolortablescale3 %d\ncolortableoffset3 %d\n\nnumberofcalculationthreads %d\n", &centerx, &centery, &zoom, &windowcenterx, &windowcentery, &windowzoom, &renderw, &renderh, &windowoffsetw, &windowoffseth, &layermode, &buddhatype1, &bailout1, &pathplotstart1, &pathplotend1, &pathminninf1, &buddhatype2, &bailout2, &pathplotstart2, &pathplotend2, &pathminninf2, &buddhatype3, &bailout3, &pathplotstart3, &pathplotend3, &pathminninf3, &colortabletype, &coloringmethod1, &coloringsumfunc1, &coloringsumfuncparam11, &colortablescale1, &colortableoffset1, &coloringmethod2, &coloringsumfunc2, &coloringsumfuncparam12, &colortablescale2, &colortableoffset2, &coloringmethod3, &coloringsumfunc3, &coloringsumfuncparam13, &colortablescale3, &colortableoffset3, &numberofcalculationthreads)) {}
 
     if (minmem == 0) {
         while (numberofcalculationthreads > td_nb) {
@@ -1025,7 +1035,7 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
         }
     }
 
-    load_location_bb_color_param(pause_calcthreads, zoom, centerx, centery, renderw, renderh, layermode, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, coloringmethodlog1, colortableoffset1, coloringmethod2, coloringmethodlog2, colortableoffset2, coloringmethod3, coloringmethodlog3, colortableoffset3);
+    load_location_bb_color_param(pause_calcthreads, zoom, centerx, centery, renderw, renderh, layermode, buddhatype1, bailout1, pathplotstart1, pathplotend1, pathminninf1, buddhatype2, bailout2, pathplotstart2, pathplotend2, pathminninf2, buddhatype3, bailout3, pathplotstart3, pathplotend3, pathminninf3, colortabletype, coloringmethod1, coloringsumfunc1, coloringsumfuncparam11, (double)colortablescale1 / 10.0 + 1.0, colortableoffset1, coloringmethod2, coloringsumfunc2, coloringsumfuncparam12, (double)colortablescale2 / 10.0 + 1.0, colortableoffset2, coloringmethod3, coloringsumfunc3, coloringsumfuncparam13, (double)colortablescale3 / 10.0 + 1.0, colortableoffset3);
     RWow = windowoffsetw;
     Wi_lo = Ri_lo + RWow / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
@@ -1077,9 +1087,9 @@ int save_status_files()
                     sum += R[td_i][Ri];
                 }
 
-                if (cm[0] == 2 || cm[0] == 3) {
-                    if (sum >= cm_log[0]) {
-                        sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+                if (csf[0] == 1) {
+                    if (sum >= (unsigned int)csfp1[0]) {
+                        sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                     }
                 }
 
@@ -1103,9 +1113,9 @@ int save_status_files()
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                        if (sum >= cm_log[layer_iter]) {
-                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                    if (csf[layer_iter] == 1) {
+                        if (sum >= (unsigned int)csfp1[layer_iter]) {
+                            sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                         }
                     }
 
@@ -1130,9 +1140,9 @@ int save_status_files()
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                        if (sum >= cm_log[layer_iter]) {
-                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                    if (csf[layer_iter] == 1) {
+                        if (sum >= (unsigned int)csfp1[layer_iter]) {
+                            sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                         }
                     }
 
@@ -1255,9 +1265,9 @@ void writeRtoPNG(const char* filename)
                 sum += R[td_i][Ri];
             }
 
-            if (cm[0] == 2 || cm[0] == 3) {
-                if (sum >= cm_log[0]) {
-                    sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+            if (csf[0] == 1) {
+                if (sum >= (unsigned int)csfp1[0]) {
+                    sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                 }
             }
 
@@ -1300,16 +1310,16 @@ void writeRtoPNG(const char* filename)
                 sum += R[td_i][Ri];
             }
 
-            if (cm[0] == 2 || cm[0] == 3) {
-                if (sum >= cm_log[0]) {
-                    sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+            if (csf[0] == 1) {
+                if (sum >= (unsigned int)csfp1[0]) {
+                    sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                 }
             }
 
             H[0][sum]++;
         }
 
-        if (cm[0] == 0 || cm[0] == 2) {
+        if (cm[0] == 0) {
             cm0n[0] = 0;
 
             for (unsigned int i = 0; i <= Rlrmax[0]; i++) {
@@ -1319,7 +1329,7 @@ void writeRtoPNG(const char* filename)
             }
         }
 
-        if (cm[0] == 1 || cm[0] == 3) {
+        if (cm[0] == 1) {
             cm1n[0] = Rw * Rh - H[0][0];
             H[0][0] = 0;
 
@@ -1340,9 +1350,9 @@ void writeRtoPNG(const char* filename)
                     sum += R[td_i][Ri];
                 }
 
-                if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                    if (sum >= cm_log[layer_iter]) {
-                        sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                if (csf[layer_iter] == 1) {
+                    if (sum >= (unsigned int)csfp1[layer_iter]) {
+                        sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                     }
                 }
 
@@ -1370,16 +1380,16 @@ void writeRtoPNG(const char* filename)
                     sum += R[td_i][Ri];
                 }
 
-                if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                    if (sum >= cm_log[layer_iter]) {
-                        sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                if (csf[layer_iter] == 1) {
+                    if (sum >= (unsigned int)csfp1[layer_iter]) {
+                        sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                     }
                 }
 
                 H[layer_iter][sum]++;
             }
 
-            if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+            if (cm[layer_iter] == 0) {
                 cm0n[layer_iter] = 0;
 
                 for (unsigned int i = 0; i <= Rlrmax[layer_iter]; i++) {
@@ -1389,7 +1399,7 @@ void writeRtoPNG(const char* filename)
                 }
             }
 
-            if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+            if (cm[layer_iter] == 1) {
                 cm1n[layer_iter] = Rw * Rh - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
@@ -1411,9 +1421,9 @@ void writeRtoPNG(const char* filename)
                     sum += R[td_i][Ri];
                 }
 
-                if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                    if (sum >= cm_log[layer_iter]) {
-                        sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                if (csf[layer_iter] == 1) {
+                    if (sum >= (unsigned int)csfp1[layer_iter]) {
+                        sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                     }
                 }
 
@@ -1441,16 +1451,16 @@ void writeRtoPNG(const char* filename)
                     sum += R[td_i][Ri];
                 }
 
-                if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                    if (sum >= cm_log[layer_iter]) {
-                        sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                if (csf[layer_iter] == 1) {
+                    if (sum >= (unsigned int)csfp1[layer_iter]) {
+                        sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                     }
                 }
 
                 H[layer_iter][sum]++;
             }
 
-            if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+            if (cm[layer_iter] == 0) {
                 cm0n[layer_iter] = 0;
 
                 for (unsigned int i = 0; i <= Rlrmax[layer_iter]; i++) {
@@ -1460,7 +1470,7 @@ void writeRtoPNG(const char* filename)
                 }
             }
 
-            if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+            if (cm[layer_iter] == 1) {
                 cm1n[layer_iter] = Rw * Rh - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
@@ -1481,7 +1491,7 @@ void writeRtoPNG(const char* filename)
     png_bytep row_buffer = (png_bytep)calloc(Rw * 3, sizeof(png_byte));
 
     if (lr_mode == 0) {
-        if (cm[0] == 0 || cm[0] == 2) {
+        if (cm[0] == 0) {
             for (int y = 0; y < Rh; y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
                 reponsive_caption_update(titlebar);
@@ -1494,9 +1504,9 @@ void writeRtoPNG(const char* filename)
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[0] == 2) {
-                        if (sum >= cm_log[0]) {
-                            sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+                    if (csf[0] == 1) {
+                        if (sum >= (unsigned int)csfp1[0]) {
+                            sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                         }
                     }
 
@@ -1516,7 +1526,7 @@ void writeRtoPNG(const char* filename)
             }
         }
 
-        if (cm[0] == 1 || cm[0] == 3) {
+        if (cm[0] == 1) {
             for (int y = 0; y < Rh; y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
                 reponsive_caption_update(titlebar);
@@ -1529,9 +1539,9 @@ void writeRtoPNG(const char* filename)
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[0] == 3) {
-                        if (sum >= cm_log[0]) {
-                            sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+                    if (csf[0] == 1) {
+                        if (sum >= (unsigned int)csfp1[0]) {
+                            sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                         }
                     }
 
@@ -1568,19 +1578,19 @@ void writeRtoPNG(const char* filename)
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                        if (sum >= cm_log[layer_iter]) {
-                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                    if (csf[layer_iter] == 1) {
+                        if (sum >= (unsigned int)csfp1[layer_iter]) {
+                            sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                         }
                     }
 
-                    if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                    if (cm[layer_iter] == 0) {
                         if (cm0n[layer_iter] > 1) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
-                    if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                    if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]));
                         }
@@ -1614,19 +1624,19 @@ void writeRtoPNG(const char* filename)
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                        if (sum >= cm_log[layer_iter]) {
-                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                    if (csf[layer_iter] == 1) {
+                        if (sum >= (unsigned int)csfp1[layer_iter]) {
+                            sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                         }
                     }
 
-                    if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                    if (cm[layer_iter] == 0) {
                         if (cm0n[layer_iter] > 1) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
-                    if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                    if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]));
                         }
@@ -1678,9 +1688,9 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                     sum += R[td_i][Ri];
                 }
 
-                if (cm[0] == 2 || cm[0] == 3) {
-                    if (sum >= cm_log[0]) {
-                        sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+                if (csf[0] == 1) {
+                    if (sum >= (unsigned int)csfp1[0]) {
+                        sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                     }
                 }
 
@@ -1725,7 +1735,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
             }
         }
 
-        if (cm[0] == 0 || cm[0] == 2) {
+        if (cm[0] == 0) {
             cm0n[0] = 0;
 
             for (unsigned int i = 0; i <= Rlrmax[0]; i++) {
@@ -1735,7 +1745,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
             }
         }
 
-        if (cm[0] == 1 || cm[0] == 3) {
+        if (cm[0] == 1) {
             cm1n[0] = local_png_width * local_png_height - H[0][0];
             H[0][0] = 0;
 
@@ -1758,9 +1768,9 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                        if (sum >= cm_log[layer_iter]) {
-                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                    if (csf[layer_iter] == 1) {
+                        if (sum >= (unsigned int)csfp1[layer_iter]) {
+                            sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                         }
                     }
 
@@ -1790,7 +1800,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 }
             }
 
-            if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+            if (cm[layer_iter] == 0) {
                 cm0n[layer_iter] = 0;
 
                 for (unsigned int i = 0; i <= Rlrmax[layer_iter]; i++) {
@@ -1800,7 +1810,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 }
             }
 
-            if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+            if (cm[layer_iter] == 1) {
                 cm1n[layer_iter] = local_png_width * local_png_height - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
@@ -1824,9 +1834,9 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                         sum += R[td_i][Ri];
                     }
 
-                    if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                        if (sum >= cm_log[layer_iter]) {
-                            sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                    if (csf[layer_iter] == 1) {
+                        if (sum >= (unsigned int)csfp1[layer_iter]) {
+                            sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                         }
                     }
 
@@ -1856,7 +1866,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 }
             }
 
-            if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+            if (cm[layer_iter] == 0) {
                 cm0n[layer_iter] = 0;
 
                 for (unsigned int i = 0; i <= Rlrmax[layer_iter]; i++) {
@@ -1866,7 +1876,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 }
             }
 
-            if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+            if (cm[layer_iter] == 1) {
                 cm1n[layer_iter] = local_png_width * local_png_height - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
@@ -1887,7 +1897,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
     png_bytep row_buffer = (png_bytep)calloc(local_png_width * 3, sizeof(png_byte));
 
     if (lr_mode == 0) {
-        if (cm[0] == 0 || cm[0] == 2) {
+        if (cm[0] == 0) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / local_png_height * 100);
                 reponsive_caption_update(titlebar);
@@ -1909,7 +1919,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
             }
         }
 
-        if (cm[0] == 1 || cm[0] == 3) {
+        if (cm[0] == 1) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
@@ -1941,13 +1951,13 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 int ct_i[LR_NB] = {0};
 
                 for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
-                    if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                    if (cm[layer_iter] == 0) {
                         if (cm0n[layer_iter] > 1) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
-                    if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                    if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]));
                         }
@@ -1974,13 +1984,13 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 int ct_i[LR_NB] = {0};
 
                 for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
-                    if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                    if (cm[layer_iter] == 0) {
                         if (cm0n[layer_iter] > 1) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / (cm0n[layer_iter] - 1)));
                         }
                     }
 
-                    if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                    if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]));
                         }
@@ -2031,15 +2041,15 @@ void sdl_message_check()
     if (sdl_event.type == SDL_KEYDOWN) {
         //// switch title bar display
         if (sdl_event.key.keysym.sym == SDLK_ESCAPE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            titlebarswitch = 1 - titlebarswitch;
+            tbs = (tbs + 1) % TBS_NB;
         }
 
-        //// saving status
+        //// save status
         if (sdl_event.key.keysym.sym == SDLK_F9 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             save_status_files();
         }
 
-        //// loading status
+        //// load status
         if (sdl_event.key.keysym.sym == SDLK_F10 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             load_status_files();
         }
@@ -2378,335 +2388,385 @@ void sdl_message_check()
             load_bb_param(2, bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2] / 10);
         }
 
-        //// change normal cm layer 123
+        //// change cm layer 123
         if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[0] = (cm[0] + 1) % CM_NORMAL_NB;
+            cm[0] = (cm[0] + 1) % CM_NB;
             cm[1] = cm[0];
             cm[2] = cm[0];
             recalc_WH_if_paused = 1;
         }
 
-        //// change normal cm layer 1
+        //// change cm layer 1
         if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[0] = (cm[0] + 1) % CM_NORMAL_NB;
+            cm[0] = (cm[0] + 1) % CM_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change normal cm layer 2
+        //// change cm layer 2
         if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[1] = (cm[1] + 1) % CM_NORMAL_NB;
+            cm[1] = (cm[1] + 1) % CM_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change normal cm layer 3
+        //// change cm layer 3
         if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[2] = (cm[2] + 1) % CM_NORMAL_NB;
+            cm[2] = (cm[2] + 1) % CM_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change log cm layer 123
+        //// change csf layer 123
         if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[0] = 2 + MAX(cm[0] - 1, 0) % CM_LOG_NB;
-            cm[1] = cm[0];
-            cm[2] = cm[0];
+            csf[0] = (csf[0] + 1) % CSF_NB;
+            csf[1] = csf[0];
+            csf[2] = csf[0];
             recalc_WH_if_paused = 1;
         }
 
-        //// change log cm layer 1
+        //// change csf layer 1
         if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[0] = 2 + MAX(cm[0] - 1, 0) % CM_LOG_NB;
+            csf[0] = (csf[0] + 1) % CSF_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change log cm layer 2
+        //// change csf layer 2
         if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[1] = 2 + MAX(cm[1] - 1, 0) % CM_LOG_NB;
+            csf[1] = (csf[1] + 1) % CSF_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change log cm layer 3
+        //// change csf layer 3
         if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm[2] = 2 + MAX(cm[2] - 1, 0) % CM_LOG_NB;
+            csf[2] = (csf[2] + 1) % CSF_NB;
             recalc_WH_if_paused = 1;
         }
 
-        //// change cm_log layer 123
-        if (sdl_event.key.keysym.sym == SDLK_5 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm_log[0] += 1;
-            cm_log[1] = cm_log[0];
-            cm_log[2] = cm_log[0];
-            recalc_WH_if_paused = 1;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_5 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            if (cm_log[0] != 0) {
-                cm_log[0] -= 1;
-            }
-
-            cm_log[1] = cm_log[0];
-            cm_log[2] = cm_log[0];
-            recalc_WH_if_paused = 1;
-        }
-
-        //// change cm_log layer 1
-        if (sdl_event.key.keysym.sym == SDLK_t&& !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm_log[0] += 1;
-            recalc_WH_if_paused = 1;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_t&& (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            if (cm_log[0] != 0) {
-                cm_log[0] -= 1;
-            }
-
-            recalc_WH_if_paused = 1;
-        }
-
-        //// change cm_log layer 2
-        if (sdl_event.key.keysym.sym == SDLK_g && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm_log[1] += 1;
-            recalc_WH_if_paused = 1;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_g && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            if (cm_log[1] != 0) {
-                cm_log[1] -= 1;
-            }
-
-            recalc_WH_if_paused = 1;
-        }
-
-        //// change cm_log layer 3
-        if (sdl_event.key.keysym.sym == SDLK_b && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            cm_log[2] += 1;
-            recalc_WH_if_paused = 1;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_b && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            if (cm_log[2] != 0) {
-                cm_log[2] -= 1;
-            }
-
-            recalc_WH_if_paused = 1;
-        }
-
-        //// change ct_o layer 123
+        //// change csfp1 layer 123
         if (sdl_event.key.keysym.sym == SDLK_6 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] + 1);
-            ct_o[1] = ct_o[0];
-            ct_o[2] = ct_o[0];
+            csfp1[0] += 1;
+            csfp1[1] = csfp1[0];
+            csfp1[2] = csfp1[0];
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_6 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] + 10);
-            ct_o[1] = ct_o[0];
-            ct_o[2] = ct_o[0];
+            csfp1[0] *= 10;
+            csfp1[1] = csfp1[0];
+            csfp1[2] = csfp1[0];
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_6 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = 0;
-            ct_o[1] = 0;
-            ct_o[2] = 0;
+            csfp1[0] = MAX(csfp1[0] - 1, 0);
+            csfp1[1] = csfp1[0];
+            csfp1[2] = csfp1[0];
+            recalc_WH_if_paused = 1;
         }
 
-        //// change ct_o layer 1
+        if (sdl_event.key.keysym.sym == SDLK_6 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            csfp1[0] = MAX(csfp1[0] / 10, 0);
+            csfp1[1] = csfp1[0];
+            csfp1[2] = csfp1[0];
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change csfp1 layer 1
         if (sdl_event.key.keysym.sym == SDLK_y && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] + 1);
+            csfp1[0] += 1;
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_y && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = ct_cycle(ct_o[0] + 10);
+            csfp1[0] *= 10;
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_y && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[0] = 0;
+            csfp1[0] = MAX(csfp1[0] - 1, 0);
+            recalc_WH_if_paused = 1;
         }
 
-        //// change ct_o layer 2
+        if (sdl_event.key.keysym.sym == SDLK_y && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            csfp1[0] = MAX(csfp1[0] / 10, 0);
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change csfp1 layer 2
         if (sdl_event.key.keysym.sym == SDLK_h && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[1] = ct_cycle(ct_o[1] + 1);
+            csfp1[1] += 1;
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_h && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[1] = ct_cycle(ct_o[1] + 10);
+            csfp1[1] *= 10;
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_h && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[1] = 0;
+            csfp1[1] = MAX(csfp1[1] - 1, 0);
+            recalc_WH_if_paused = 1;
         }
 
-        //// change ct_o layer 3
+        if (sdl_event.key.keysym.sym == SDLK_h && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            csfp1[1] = MAX(csfp1[1] / 10, 0);
+            recalc_WH_if_paused = 1;
+        }
+
+        //// change csfp1 layer 3
         if (sdl_event.key.keysym.sym == SDLK_n && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[2] = ct_cycle(ct_o[2] + 1);
+            csfp1[2] += 1;
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_n && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[2] = ct_cycle(ct_o[2] + 10);
+            csfp1[2] *= 10;
+            recalc_WH_if_paused = 1;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_n && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_o[2] = 0;
+            csfp1[2] = MAX(csfp1[2] - 1, 0);
+            recalc_WH_if_paused = 1;
         }
 
-        //// change ct_v layer 123
-        if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[0]++;
-            ct_v[1] = ct_v[0];
-            ct_v[2] = ct_v[0];
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[0]--;
-            ct_v[1] = ct_v[0];
-            ct_v[2] = ct_v[0];
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[0] = 0;
-            ct_v[1] = 0;
-            ct_v[2] = 0;
-        }
-
-        //// change ct_v layer 1
-        if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[0]++;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_u && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[0]--;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[0] = 0;
-        }
-
-        //// change ct_v layer 2
-        if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[1]++;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_j && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[1]--;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[1] = 0;
-        }
-
-        //// change ct_v layer 3
-        if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[2]++;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_m && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[2]--;
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_v[2] = 0;
+        if (sdl_event.key.keysym.sym == SDLK_n && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            csfp1[2] = MAX(csfp1[2] / 10, 0);
+            recalc_WH_if_paused = 1;
         }
 
         //// change ct_f layer 123
-        if (sdl_event.key.keysym.sym == SDLK_8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[0] += 0.1;
             ct_f[1] = ct_f[0];
             ct_f[2] = ct_f[0];
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_8 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[0] -= 0.1;
             ct_f[1] = ct_f[0];
             ct_f[2] = ct_f[0];
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[0] = 1.0;
             ct_f[1] = 1.0;
             ct_f[2] = 1.0;
         }
 
         //// change ct_f layer 1
-        if (sdl_event.key.keysym.sym == SDLK_i && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[0] += 0.1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_i && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_u && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[0] -= 0.1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_i && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[0] = 1.0;
         }
 
         //// change ct_f layer 2
-        if (sdl_event.key.keysym.sym == SDLK_k && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[1] += 0.1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_k && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_j && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[1] -= 0.1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_k && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[1] = 1.0;
         }
 
         //// change ct_f layer 3
-        if (sdl_event.key.keysym.sym == SDLK_COMMA && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[2] += 0.1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_COMMA && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_m && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[2] -= 0.1;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_COMMA && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_f[2] = 1.0;
+        }
+
+        //// change ct_o layer 123
+        if (sdl_event.key.keysym.sym == SDLK_8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[0] = ct_cycle(ct_o[0] + 1);
+            ct_o[1] = ct_o[0];
+            ct_o[2] = ct_o[0];
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_8 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[0] = ct_cycle(ct_o[0] + 10);
+            ct_o[1] = ct_o[0];
+            ct_o[2] = ct_o[0];
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[0] = 0;
+            ct_o[1] = 0;
+            ct_o[2] = 0;
+        }
+
+        //// change ct_o layer 1
+        if (sdl_event.key.keysym.sym == SDLK_i && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[0] = ct_cycle(ct_o[0] + 1);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_i && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[0] = ct_cycle(ct_o[0] + 10);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_i && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[0] = 0;
+        }
+
+        //// change ct_o layer 2
+        if (sdl_event.key.keysym.sym == SDLK_k && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[1] = ct_cycle(ct_o[1] + 1);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_k && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[1] = ct_cycle(ct_o[1] + 10);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_k && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[1] = 0;
+        }
+
+        //// change ct_o layer 3
+        if (sdl_event.key.keysym.sym == SDLK_COMMA && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[2] = ct_cycle(ct_o[2] + 1);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_COMMA && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[2] = ct_cycle(ct_o[2] + 10);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_COMMA && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_o[2] = 0;
+        }
+
+        //// change ct_v layer 123
+        if (sdl_event.key.keysym.sym == SDLK_9 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[0]++;
+            ct_v[1] = ct_v[0];
+            ct_v[2] = ct_v[0];
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_9 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[0]--;
+            ct_v[1] = ct_v[0];
+            ct_v[2] = ct_v[0];
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_9 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[0] = 0;
+            ct_v[1] = 0;
+            ct_v[2] = 0;
+        }
+
+        //// change ct_v layer 1
+        if (sdl_event.key.keysym.sym == SDLK_o && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[0]++;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_o && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[0]--;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_o && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[0] = 0;
+        }
+
+        //// change ct_v layer 2
+        if (sdl_event.key.keysym.sym == SDLK_l && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[1]++;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_l && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[1]--;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_l && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[1] = 0;
+        }
+
+        //// change ct_v layer 3
+        if (sdl_event.key.keysym.sym == SDLK_PERIOD && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[2]++;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_PERIOD && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[2]--;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_PERIOD && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_v[2] = 0;
         }
 
         //// permutate layer color
         if (sdl_event.key.keysym.sym == SDLK_TAB && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (plc == 0 || plc == 3) {
                 int tmp_cm = cm[0];
-                unsigned int tmp_cm_log = cm_log[0];
+                int tmp_csf = csf[0];
+                int tmp_csfp1 = csfp1[0];
+                double tmp_ct_f = ct_f[0];
                 int tmp_ct_o = ct_o[0];
                 int tmp_ct_v = ct_v[0];
                 cm[0] = cm[1];
-                cm_log[0] = cm_log[1];
+                csf[0] = csf[1];
+                csfp1[0] = csfp1[1];
+                ct_f[0] = ct_f[1];
                 ct_o[0] = ct_o[1];
                 ct_v[0] = ct_v[1];
                 cm[1] = tmp_cm;
-                cm_log[1] = tmp_cm_log;
+                csf[1] = tmp_csf;
+                csfp1[1] = tmp_csfp1;
+                ct_f[1] = tmp_ct_f;
                 ct_o[1] = tmp_ct_o;
                 ct_v[1] = tmp_ct_v;
             }
 
             if (plc == 1 || plc == 4) {
                 int tmp_cm = cm[1];
-                unsigned int tmp_cm_log = cm_log[1];
+                int tmp_csf = csf[1];
+                int tmp_csfp1 = csfp1[1];
+                double tmp_ct_f = ct_f[1];
                 int tmp_ct_o = ct_o[1];
                 int tmp_ct_v = ct_v[1];
                 cm[1] = cm[2];
-                cm_log[1] = cm_log[2];
+                csf[1] = csf[2];
+                csfp1[1] = csfp1[2];
+                ct_f[1] = ct_f[2];
                 ct_o[1] = ct_o[2];
                 ct_v[1] = ct_v[2];
                 cm[2] = tmp_cm;
-                cm_log[2] = tmp_cm_log;
+                csf[2] = tmp_csf;
+                csfp1[2] = tmp_csfp1;
+                ct_f[2] = tmp_ct_f;
                 ct_o[2] = tmp_ct_o;
                 ct_v[2] = tmp_ct_v;
             }
 
             if (plc == 2 || plc == 5) {
                 int tmp_cm = cm[0];
-                unsigned int tmp_cm_log = cm_log[0];
+                int tmp_csf = csf[0];
+                int tmp_csfp1 = csfp1[0];
+                double tmp_ct_f = ct_f[0];
                 int tmp_ct_o = ct_o[0];
                 int tmp_ct_v = ct_v[0];
                 cm[0] = cm[2];
-                cm_log[0] = cm_log[2];
+                csf[0] = csf[2];
+                csfp1[0] = csfp1[2];
+                ct_f[0] = ct_f[2];
                 ct_o[0] = ct_o[2];
                 ct_v[0] = ct_v[2];
                 cm[2] = tmp_cm;
-                cm_log[2] = tmp_cm_log;
+                csf[2] = tmp_csf;
+                csfp1[2] = tmp_csfp1;
+                ct_f[2] = tmp_ct_f;
                 ct_o[2] = tmp_ct_o;
                 ct_v[2] = tmp_ct_v;
             }
@@ -2881,18 +2941,18 @@ void sdl_message_check()
             load_location(1, 4.0 / (Rr_up - Rr_lo), 0.5 * (Rr_lo + Rr_up) + Rr_ra * 0.01, 0.5 * (Ri_lo + Ri_up), Rw, Rh);
         }
 
-        //// writing window to one png
+        //// write window to one png
         if (sdl_event.key.keysym.sym == SDLK_BACKSPACE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
             }
 
             writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
@@ -2902,18 +2962,18 @@ void sdl_message_check()
             autoWtoPNG = (autoWtoPNG + 1) % AUTOWRITE_MODE_NB;
         }
 
-        //// writing tiled render to multiple pngs
+        //// write tiled render to multiple pngs
         if (sdl_event.key.keysym.sym == SDLK_BACKSLASH && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (lr_mode == 0) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], Rw, Rh, Tw, Th, (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
+                sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
             }
 
             sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -2935,18 +2995,18 @@ void sdl_message_check()
             autoRTtoPNG = (autoRTtoPNG + 1) % AUTOWRITE_MODE_NB;
         }
 
-        //// writing render to one png
+        //// write render to one png
         if (sdl_event.key.keysym.sym == SDLK_RETURN && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             if (lr_mode == 0) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 1) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
             if (lr_mode == 2) {
-                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
+                sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, (double)Ppsum);
             }
 
             writeRtoPNG(filename);
@@ -2956,22 +3016,7 @@ void sdl_message_check()
             autoRtoPNG = (autoRtoPNG + 1) % AUTOWRITE_MODE_NB;
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_LEFTBRACKET && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            Tw = MIN(Tw / Rw_f, Rw);
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_LEFTBRACKET && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            Tw = MAX(Tw * Rw_f, 1000);
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_RIGHTBRACKET && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            Th = MIN(Th / Rh_f, Rh);
-        }
-
-        if (sdl_event.key.keysym.sym == SDLK_RIGHTBRACKET && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            Th = MAX(Th * Rh_f, 1000);
-        }
-
+        //// change t_autoPNG_delta
         if (sdl_event.key.keysym.sym == SDLK_MINUS && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             t_autoPNG_delta = MAX(t_autoPNG_delta / 10, 6e4);
         }
@@ -2980,12 +3025,30 @@ void sdl_message_check()
             t_autoPNG_delta = MIN(t_autoPNG_delta * 10, 6e7);
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_SEMICOLON && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        //// change Ppsum_autoPNG_delta
+        if (sdl_event.key.keysym.sym == SDLK_LEFTBRACKET && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             Ppsum_autoPNG_delta = MAX(Ppsum_autoPNG_delta / 10, 1e4);
         }
 
-        if (sdl_event.key.keysym.sym == SDLK_QUOTE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+        if (sdl_event.key.keysym.sym == SDLK_RIGHTBRACKET && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             Ppsum_autoPNG_delta = Ppsum_autoPNG_delta * 10;
+        }
+
+        //// change tile size
+        if (sdl_event.key.keysym.sym == SDLK_SEMICOLON && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            Tw = MIN(Tw / Rw_f, Rw);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_SEMICOLON && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            Tw = MAX(Tw * Rw_f, 1000);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_QUOTE && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            Th = MIN(Th / Rh_f, Rh);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_QUOTE && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            Th = MAX(Th * Rh_f, 1000);
         }
     }
 }
@@ -3028,15 +3091,15 @@ void visualisation_thread()
 
             if ((autoWtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoWtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
                 }
 
                 writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
@@ -3044,15 +3107,15 @@ void visualisation_thread()
 
             if ((autoRTtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRTtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], Rw, Rh, Tw, Th, (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, Tw, Th, (double)Ppsum);
+                    sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i T%ix%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, Tw, Th, (double)Ppsum);
                 }
 
                 sprintf(commandname, "mkdir \"%s\"", dirname);
@@ -3072,15 +3135,15 @@ void visualisation_thread()
 
             if ((autoRtoPNG == 1 && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) || (autoRtoPNG == 2 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
                 if (lr_mode == 0) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), Rw, Rh, (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 1) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
                 if (lr_mode == 2) {
-                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), Rw, Rh, (double)Ppsum);
+                    sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i R%ix%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], Rw, Rh, (double)Ppsum);
                 }
 
                 writeRtoPNG(filename);
@@ -3109,9 +3172,9 @@ void visualisation_thread()
                                 sum += R[td_i][Ri];
                             }
 
-                            if (cm[0] == 2 || cm[0] == 3) {
-                                if (sum >= cm_log[0]) {
-                                    sum = cm_log[0] + (unsigned int) log((double)(sum - cm_log[0] + 1));
+                            if (csf[0] == 1) {
+                                if (sum >= (unsigned int)csfp1[0]) {
+                                    sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
                                 }
                             }
 
@@ -3156,7 +3219,7 @@ void visualisation_thread()
                         }
                     }
 
-                    if (cm[0] == 0 || cm[0] == 2) {
+                    if (cm[0] == 0) {
                         cm0n[0] = 0;
 
                         for (unsigned int i = 0; i <= Rlrmax[0]; i++) {
@@ -3166,7 +3229,7 @@ void visualisation_thread()
                         }
                     }
 
-                    if (cm[0] == 1 || cm[0] == 3) {
+                    if (cm[0] == 1) {
                         cm1n[0] = Ww * Wh - H[0][0];
                         H[0][0] = 0;
 
@@ -3189,9 +3252,9 @@ void visualisation_thread()
                                     sum += R[td_i][Ri];
                                 }
 
-                                if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                                    if (sum >= cm_log[layer_iter]) {
-                                        sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                                if (csf[layer_iter] == 1) {
+                                    if (sum >= (unsigned int)csfp1[layer_iter]) {
+                                        sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                                     }
                                 }
 
@@ -3221,7 +3284,7 @@ void visualisation_thread()
                             }
                         }
 
-                        if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                        if (cm[layer_iter] == 0) {
                             cm0n[layer_iter] = 0;
 
                             for (unsigned int i = 0; i <= Rlrmax[layer_iter]; i++) {
@@ -3231,7 +3294,7 @@ void visualisation_thread()
                             }
                         }
 
-                        if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                        if (cm[layer_iter] == 1) {
                             cm1n[layer_iter] = Ww * Wh - H[layer_iter][0];
                             H[layer_iter][0] = 0;
 
@@ -3255,9 +3318,9 @@ void visualisation_thread()
                                     sum += R[td_i][Ri];
                                 }
 
-                                if (cm[layer_iter] == 2 || cm[layer_iter] == 3) {
-                                    if (sum >= cm_log[layer_iter]) {
-                                        sum = cm_log[layer_iter] + (unsigned int) log((double)(sum - cm_log[layer_iter] + 1));
+                                if (csf[layer_iter] == 1) {
+                                    if (sum >= (unsigned int)csfp1[layer_iter]) {
+                                        sum = csfp1[layer_iter] + (unsigned int) log((double)(sum - csfp1[layer_iter] + 1));
                                     }
                                 }
 
@@ -3287,7 +3350,7 @@ void visualisation_thread()
                             }
                         }
 
-                        if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                        if (cm[layer_iter] == 0) {
                             cm0n[layer_iter] = 0;
 
                             for (unsigned int i = 0; i <= Rlrmax[layer_iter]; i++) {
@@ -3297,7 +3360,7 @@ void visualisation_thread()
                             }
                         }
 
-                        if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                        if (cm[layer_iter] == 1) {
                             cm1n[layer_iter] = Ww * Wh - H[layer_iter][0];
                             H[layer_iter][0] = 0;
 
@@ -3314,7 +3377,7 @@ void visualisation_thread()
             if (lr_mode == 0) {
                 ct_o[0] = ct_cycle(ct_o[0] + ct_v[0]);
 
-                if (cm[0] == 0 || cm[0] == 2) {
+                if (cm[0] == 0) {
                     for (int Wy = 0; Wy < Wh; Wy++) {
                         for (int Wx = 0; Wx < Ww; Wx++) {
                             int ct_i = 0;
@@ -3330,7 +3393,7 @@ void visualisation_thread()
                     }
                 }
 
-                if (cm[0] == 1 || cm[0] == 3) {
+                if (cm[0] == 1) {
                     for (int Wy = 0; Wy < Wh; Wy++) {
                         for (int Wx = 0; Wx < Ww; Wx++) {
                             int ct_i = 0;
@@ -3357,13 +3420,13 @@ void visualisation_thread()
                         int ct_i[LR_NB] = {0};
 
                         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
-                            if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                            if (cm[layer_iter] == 0) {
                                 if (cm0n[layer_iter] > 1) {
                                     ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / (cm0n[layer_iter] - 1)));
                                 }
                             }
 
-                            if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                            if (cm[layer_iter] == 1) {
                                 if (cm1n[layer_iter] > 0) {
                                     ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]));
                                 }
@@ -3388,13 +3451,13 @@ void visualisation_thread()
                         int ct_i[LR_NB] = {0};
 
                         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
-                            if (cm[layer_iter] == 0 || cm[layer_iter] == 2) {
+                            if (cm[layer_iter] == 0) {
                                 if (cm0n[layer_iter] > 1) {
                                     ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / (cm0n[layer_iter] - 1)));
                                 }
                             }
 
-                            if (cm[layer_iter] == 1 || cm[layer_iter] == 3) {
+                            if (cm[layer_iter] == 1) {
                                 if (cm1n[layer_iter] > 0) {
                                     ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]));
                                 }
@@ -3409,9 +3472,15 @@ void visualisation_thread()
                 }
             }
 
-            if (titlebarswitch == 0) {
-                sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) ct%i cm%i.%i.%i.%i cm%i.%i.%i.%i cm%i.%i.%i.%i th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type, cm[0], cm_log[0], ct_o[0], (int)(10 * (ct_f[0] - 1.0)), cm[1], cm_log[1], ct_o[1], (int)(10 * (ct_f[1] - 1.0)), cm[2], cm_log[2], ct_o[2], (int)(10 * (ct_f[2] - 1.0)), td_nb, (double)Ppsum);
-            } else {
+            if (tbs == 0) {
+                sprintf(titlebar, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) W(%.6f %.6f %.1f) th%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), td_nb, (double)Ppsum);
+            }
+
+            if (tbs == 1) {
+                sprintf(titlebar, "lm%i ct%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i th%i %g", lr_mode, ct_type, cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], td_nb, (double)Ppsum);
+            }
+
+            if (tbs == 2) {
                 sprintf(titlebar, "lm%i R%ix%i T%ix%i autoPNG%i%i%i deltat%.0e deltaPp%.0e Rmax%g th%i %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), td_nb, (double)Ppsum);
             }
 
@@ -3446,7 +3515,7 @@ int main(int argc, char* argv[])
         td_nb = MIN(ceil((double)td_vc_nb / 3) * 3, TD_MAX);
     }
 
-    load_location_bb_color_param(0, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 10, 0, 5, 0, 0, 5, 0, 0, 5, 0);
+    load_location_bb_color_param(0, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 10, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));
