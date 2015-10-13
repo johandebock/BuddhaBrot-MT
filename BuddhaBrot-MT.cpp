@@ -173,14 +173,19 @@ int Tw = 1000; // tile width
 int Th = 1000; // tile height
 
 //// cm coloring methods
-//// coloring method 0 : rank-order mapping
-//// coloring method 1 : histogram mapping
-//// coloring method 0 : if cm0n > 1 : ct_i = ct_e * H[sum] / (cm0n - 1)
-//// coloring method 0 : else          ct_i = ct_s                               TODO
-//// coloring method 1 : if cm1n > 0 : ct_i = ct_e * H[sum] / cm1n :
-//// coloring method 1 : else          ct_i = ct_s                               TODO check ct_e * () in code
+//// coloring method 0 : rank-order mapping : each unique sum get a unique color : independent of sum frequency
+//// coloring method 1 : histogram equalization : frequent sums get spread more in color table : ideally resulting in flat histogram or each color evenly represented
+//// coloring method 2 : linear
+//// coloring method 0 : problematic : when lots of low freq unique sums
+//// coloring method 1 : problematic : when a few high freq sums : 25% sum -> 25% jump in color table
+//// coloring method 0 : effect on Buddhabrot 0->255 : more detail in mid sums : low sums lost in black
+//// coloring method 1 : effect on Buddhabrot 0->255 : more detail in low sums : high sums lost in white
+//// coloring method 0 : if cm0n > 1 : ct_i = ct_e * Rank[sum] / (cm0n - 1)
+//// coloring method 0 : else          ct_i = ct_s
+//// coloring method 1 : if cm1n > 0 : ct_i = ct_e * CumulativeH[sum] / cm1n :
+//// coloring method 1 : else          ct_i = ct_s                               TODO check ct_e * () in code optim
 int cm[LR_NB]; // coloring method , per layer
-#define CM_NB 2 // number of coloring methods
+#define CM_NB 3 // number of coloring methods
 int cm0n[LR_NB]; // normalization value for coloring method 0 = number of filled bins in histogram = number of unique values in render , per layer
 int cm1n[LR_NB]; // normalization value for coloring method 1 = (number of pixels in render - number of 0 pixels in render) , per layer
 
@@ -433,7 +438,7 @@ void reset_R(int td_i)
     Hl[0] = 0;
     Hl[1] = 0;
     Hl[2] = 0;
-    t_autoPNG_last = SDL_GetTicks();
+    t_autoPNG_last = (SDL_GetTicks() / t_autoPNG_delta) * t_autoPNG_delta;
     Ppsum_autoPNG_last = 0;
 }
 
@@ -450,7 +455,7 @@ void realloc_R(int td_i)
     Hl[0] = 0;
     Hl[1] = 0;
     Hl[2] = 0;
-    t_autoPNG_last = SDL_GetTicks();
+    t_autoPNG_last = (SDL_GetTicks() / t_autoPNG_delta) * t_autoPNG_delta;
     Ppsum_autoPNG_last = 0;
 }
 
@@ -1066,7 +1071,7 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
         Ppsum += Pp[td_i];
     }
 
-    Ppsum_autoPNG_last = Ppsum;
+    Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
     fclose(parameters_file);
     return (numberofcalculationthreads);
 }
@@ -1568,6 +1573,41 @@ void writeRtoPNG(const char* filename)
                 png_write_row(png_ptr, row_buffer);
             }
         }
+
+        if (cm[0] == 2) {
+            for (int y = 0; y < Rh; y++) {
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+                reponsive_caption_update(titlebar);
+
+                for (int x = 0; x < Rw; x++) {
+                    int Ri = y * Rw + x;
+                    unsigned int sum = 0;
+
+                    for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                        sum += R[td_i][Ri];
+                    }
+
+                    if (csf[0] == 1) {
+                        if (sum >= (unsigned int)csfp1[0]) {
+                            sum = csfp1[0] + (unsigned int) log((double)(sum - csfp1[0] + 1));
+                        }
+                    }
+
+                    int ct_i = 0;
+
+                    if (Rlrmax[0] > 0) {
+                        ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)sum / Rlrmax[0]));
+                    }
+
+                    ct_i = ct_cycle(ct_i + ct_o[0]);
+                    row_buffer[x * 3 + 0] = CT[ct_i][0];
+                    row_buffer[x * 3 + 1] = CT[ct_i][1];
+                    row_buffer[x * 3 + 2] = CT[ct_i][2];
+                }
+
+                png_write_row(png_ptr, row_buffer);
+            }
+        }
     }
 
     if (lr_mode == 1) {
@@ -1601,6 +1641,12 @@ void writeRtoPNG(const char* filename)
                     if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]));
+                        }
+                    }
+
+                    if (cm[layer_iter] == 2) {
+                        if (Rlrmax[layer_iter] > 0) {
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)sum / Rlrmax[layer_iter]));
                         }
                     }
 
@@ -1647,6 +1693,12 @@ void writeRtoPNG(const char* filename)
                     if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][sum] / cm1n[layer_iter]));
+                        }
+                    }
+
+                    if (cm[layer_iter] == 2) {
+                        if (Rlrmax[layer_iter] > 0) {
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)sum / Rlrmax[layer_iter]));
                         }
                     }
 
@@ -1948,6 +2000,28 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                 png_write_row(png_ptr, row_buffer);
             }
         }
+
+        if (cm[0] == 2) {
+            for (int png_y = 0; png_y < local_png_height; png_y++) {
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+                reponsive_caption_update(titlebar);
+
+                for (int png_x = 0; png_x < local_png_width; png_x++) {
+                    int ct_i = 0;
+
+                    if (Rlrmax[0] > 0) {
+                        ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)T[0][png_y * local_png_width + png_x] / Rlrmax[0]));
+                    }
+
+                    ct_i = ct_cycle(ct_i + ct_o[0]);
+                    row_buffer[png_x * 3 + 0] = CT[ct_i][0];
+                    row_buffer[png_x * 3 + 1] = CT[ct_i][1];
+                    row_buffer[png_x * 3 + 2] = CT[ct_i][2];
+                }
+
+                png_write_row(png_ptr, row_buffer);
+            }
+        }
     }
 
     if (lr_mode == 1) {
@@ -1968,6 +2042,12 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                     if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]));
+                        }
+                    }
+
+                    if (cm[layer_iter] == 2) {
+                        if (Rlrmax[layer_iter] > 0) {
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)T[layer_iter][png_y * local_png_width + png_x] / Rlrmax[layer_iter]));
                         }
                     }
 
@@ -2001,6 +2081,12 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
                     if (cm[layer_iter] == 1) {
                         if (cm1n[layer_iter] > 0) {
                             ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][T[layer_iter][png_y * local_png_width + png_x]] / cm1n[layer_iter]));
+                        }
+                    }
+
+                    if (cm[layer_iter] == 2) {
+                        if (Rlrmax[layer_iter] > 0) {
+                            ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)T[layer_iter][png_y * local_png_width + png_x] / Rlrmax[layer_iter]));
                         }
                     }
 
@@ -3158,11 +3244,11 @@ void visualisation_thread()
             }
 
             if ((autoWtoPNG == 1 || autoRTtoPNG == 1 || autoRtoPNG == 1) && (SDL_GetTicks() > t_autoPNG_last + t_autoPNG_delta)) {
-                t_autoPNG_last = SDL_GetTicks();
+                t_autoPNG_last = (SDL_GetTicks() / t_autoPNG_delta) * t_autoPNG_delta;
             }
 
             if ((autoWtoPNG == 2 || autoRTtoPNG == 2 || autoRtoPNG == 2) && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta)) {
-                Ppsum_autoPNG_last = Ppsum;
+                Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
             }
 
             #pragma omp flush(td_pause)
@@ -3416,6 +3502,22 @@ void visualisation_thread()
                         }
                     }
                 }
+
+                if (cm[0] == 2) {
+                    for (int Wy = 0; Wy < Wh; Wy++) {
+                        for (int Wx = 0; Wx < Ww; Wx++) {
+                            int ct_i = 0;
+
+                            if (Rlrmax[0] > 0) {
+                                ct_i = MIN(ct_e, ct_f[0] * ct_e * ((double)W[0][Wy * Ww + Wx] / Rlrmax[0]));
+                            }
+
+                            ct_i = ct_cycle(ct_i + ct_o[0]);
+                            pixel_p = (Uint32*)sdl_surface->pixels + Wy * Ww + Wx;
+                            *pixel_p = SDL_MapRGBA(sdl_surface->format, CT[ct_i][0], CT[ct_i][1], CT[ct_i][2], SDL_ALPHA_OPAQUE);
+                        }
+                    }
+                }
             }
 
             if (lr_mode == 1) {
@@ -3437,6 +3539,12 @@ void visualisation_thread()
                             if (cm[layer_iter] == 1) {
                                 if (cm1n[layer_iter] > 0) {
                                     ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]));
+                                }
+                            }
+
+                            if (cm[layer_iter] == 2) {
+                                if (Rlrmax[layer_iter] > 0) {
+                                    ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)W[layer_iter][Wy * Ww + Wx] / Rlrmax[layer_iter]));
                                 }
                             }
 
@@ -3468,6 +3576,12 @@ void visualisation_thread()
                             if (cm[layer_iter] == 1) {
                                 if (cm1n[layer_iter] > 0) {
                                     ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)H[layer_iter][W[layer_iter][Wy * Ww + Wx]] / cm1n[layer_iter]));
+                                }
+                            }
+
+                            if (cm[layer_iter] == 2) {
+                                if (Rlrmax[layer_iter] > 0) {
+                                    ct_i[layer_iter] = MIN(ct_e, ct_f[layer_iter] * ct_e * ((double)W[layer_iter][Wy * Ww + Wx] / Rlrmax[layer_iter]));
                                 }
                             }
 
