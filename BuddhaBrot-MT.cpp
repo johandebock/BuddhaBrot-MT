@@ -55,7 +55,7 @@ Uint32 t_last_frame = 0; // time last frame was rendered
 //// auto write mode 2 : auto write based on Ppsum
 int autoWtoPNG = 0; // auto write window to one png
 int autoRTtoPNG = 0; // auto write tiled render to multiple pngs
-int autoRtoPNG = 0; // auto write render to one png
+int autoRtoPNG = 2; // auto write render to one png
 #define AUTOWRITE_MODE_NB 3 // number of auto write PNG modes
 
 //// auto write mode 1
@@ -64,7 +64,7 @@ Uint32 t_autoPNG_delta = 6e5; // time between each auto PNG write, default 10min
 
 //// auto write mode 2
 long long unsigned int Ppsum_autoPNG_last = 0; // Ppsum of last written auto PNG
-long long unsigned int Ppsum_autoPNG_delta = 1e10; // Ppsum difference between each auto PNG write, default 1e9
+long long unsigned int Ppsum_autoPNG_delta = 1e9; // Ppsum difference between each auto PNG write, default 1e9
 
 //// td threads
 #define TD_MAX 18 // maximum number of calc threads
@@ -430,6 +430,11 @@ void reset_R(int td_i)
 {
     Pp[td_i] = 0;
     memset(R[td_i], 0, Rw * Rh * sizeof(unsigned int));
+    Hl[0] = 0;
+    Hl[1] = 0;
+    Hl[2] = 0;
+    t_autoPNG_last = SDL_GetTicks();
+    Ppsum_autoPNG_last = 0;
 }
 
 void realloc_R(int td_i)
@@ -442,6 +447,11 @@ void realloc_R(int td_i)
     }
 
     R[td_i] = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
+    Hl[0] = 0;
+    Hl[1] = 0;
+    Hl[2] = 0;
+    t_autoPNG_last = SDL_GetTicks();
+    Ppsum_autoPNG_last = 0;
 }
 
 void realloc_P(int td_i)
@@ -590,9 +600,6 @@ void load_location(int pause_calcthreads, double load_zoom, double load_centerx,
     Wr_up = Wr_lo + Wh / Rhdivr;
     Wi_lo = Ri_lo + RWow / Rwdivi;
     Wi_up = Wi_lo + Ww / Rwdivi;
-    Hl[0] = 0;
-    Hl[1] = 0;
-    Hl[2] = 0;
 
     if (pause_calcthreads) {
         td_pause = 0;
@@ -1059,6 +1066,7 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
         Ppsum += Pp[td_i];
     }
 
+    Ppsum_autoPNG_last = Ppsum;
     fclose(parameters_file);
     return (numberofcalculationthreads);
 }
