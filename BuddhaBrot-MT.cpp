@@ -176,8 +176,8 @@ int Th = 1000; // tile height
 //// coloring method 0 : rank-order mapping : each unique sum get a unique color : independent of sum frequency
 //// coloring method 1 : histogram equalization : frequent sums get spread more in color table : ideally resulting in flat histogram or each color evenly represented
 //// coloring method 2 : linear
-//// coloring method 0 : problematic : when lots of low freq unique sums
-//// coloring method 1 : problematic : when a few high freq sums : 25% sum -> 25% jump in color table
+//// coloring method 0 : problematic : when lots of low freq unique sums : 25% of unique -> spread over 25% of color table
+//// coloring method 1 : problematic : when a few high freq sums : 25% of pixels = sum -> 25% jump in color table
 //// coloring method 0 : effect on Buddhabrot 0->255 : more detail in mid sums : low sums lost in black
 //// coloring method 1 : effect on Buddhabrot 0->255 : more detail in low sums : high sums lost in white
 //// coloring method 0 : if cm0n > 1 : ct_i = ct_e * Rank[sum] / (cm0n - 1)
@@ -2634,7 +2634,7 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_f[0] -= 0.1;
+            ct_f[0] += 1.0;
             ct_f[1] = ct_f[0];
             ct_f[2] = ct_f[0];
         }
@@ -2651,7 +2651,7 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_u && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_f[0] -= 0.1;
+            ct_f[0] += 1.0;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_u && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
@@ -2664,7 +2664,7 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_j && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_f[1] -= 0.1;
+            ct_f[1] += 1.0;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_j && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
@@ -2677,7 +2677,7 @@ void sdl_message_check()
         }
 
         if (sdl_event.key.keysym.sym == SDLK_m && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
-            ct_f[2] -= 0.1;
+            ct_f[2] += 1.0;
         }
 
         if (sdl_event.key.keysym.sym == SDLK_m && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
