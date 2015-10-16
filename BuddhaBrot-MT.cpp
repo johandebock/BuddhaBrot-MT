@@ -222,13 +222,20 @@ int ct_cycle(int i, int e)
     return ((i > e) ? (i - e - 1) : ((i < 0) ? (e + i + 1) : i));
 }
 
-void ct_load(int load_ct_type1, int load_ct_type2, int load_ct_type3)
+void ct_load(int load_selectedlayer, int load_ct_type1, int load_ct_type2, int load_ct_type3)
 {
     ct_type[0] = load_ct_type1;
     ct_type[1] = load_ct_type2;
     ct_type[2] = load_ct_type3;
+    int layer_start = 0;
+    int layer_end = LR_NB - 1;
 
-    for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
+    if (load_selectedlayer != -1) {
+        layer_start = load_selectedlayer;
+        layer_end = load_selectedlayer;
+    }
+
+    for (int layer_iter = layer_start; layer_iter <= layer_end; layer_iter++) {
         if (ct_type[layer_iter] == 0) {
             CTe[layer_iter] = 255;
             free(CT[layer_iter]);
@@ -516,37 +523,26 @@ void load_bb_param(int load_selectedlayer, int load_bb_type, int load_bb_bail, i
     load_bb_pps = MIN(MAX(load_bb_pps, 0), load_bb_bail);
     load_bb_ppe = MIN(MAX(load_bb_ppe, 0), load_bb_bail);
     load_bb_minn = MIN(MAX(load_bb_minn, 0), load_bb_bail);
+    int layer_start = 0;
+    int layer_step = 1;
 
     if (load_selectedlayer != -1) {
-        for (int td_i = load_selectedlayer; td_i < td_nb; td_i += LR_NB) {
-            bb_type[td_i] = load_bb_type;
-
-            if (bb_bail[td_i] != load_bb_bail) {
-                bb_bail[td_i] = load_bb_bail;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps;
-            bb_ppe[td_i] = load_bb_ppe;
-            bb_minn[td_i] = load_bb_minn;
-            reset_R(td_i);
-        }
+        layer_start = load_selectedlayer;
+        layer_step = LR_NB;
     }
 
-    if (load_selectedlayer == -1) {
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            bb_type[td_i] = load_bb_type;
+    for (int td_i = layer_start; td_i < td_nb; td_i += layer_step) {
+        bb_type[td_i] = load_bb_type;
 
-            if (bb_bail[td_i] != load_bb_bail) {
-                bb_bail[td_i] = load_bb_bail;
-                realloc_P(td_i);
-            }
-
-            bb_pps[td_i] = load_bb_pps;
-            bb_ppe[td_i] = load_bb_ppe;
-            bb_minn[td_i] = load_bb_minn;
-            reset_R(td_i);
+        if (bb_bail[td_i] != load_bb_bail) {
+            bb_bail[td_i] = load_bb_bail;
+            realloc_P(td_i);
         }
+
+        bb_pps[td_i] = load_bb_pps;
+        bb_ppe[td_i] = load_bb_ppe;
+        bb_minn[td_i] = load_bb_minn;
+        reset_R(td_i);
     }
 
     td_pause = 0;
@@ -572,7 +568,7 @@ void load_location_bb_color_param(int pause_calcthreads, double load_zoom, doubl
     load_bb_minn2 = MIN(MAX(load_bb_minn2, 0), load_bb_bail2);
     load_bb_minn3 = MIN(MAX(load_bb_minn3, 0), load_bb_bail3);
     lr_mode = load_lr_mode;
-    ct_load(load_ct_type1, load_ct_type2, load_ct_type3);
+    ct_load(-1, load_ct_type1, load_ct_type2, load_ct_type3);
     cm[0] = load_cm1;
     cm[1] = load_cm2;
     cm[2] = load_cm3;
@@ -2096,25 +2092,76 @@ void sdl_message_check()
             ct_type[0] = (ct_type[0] + 1) % CT_TYPE_NB;
             ct_type[1] = ct_type[0];
             ct_type[2] = ct_type[0];
-            ct_load(ct_type[0], ct_type[1], ct_type[2]);
+            ct_load(-1, ct_type[0], ct_type[1], ct_type[2]);
         }
 
         //// change ct_type layer 1
         if (sdl_event.key.keysym.sym == SDLK_F2 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_type[0] = (ct_type[0] + 1) % CT_TYPE_NB;
-            ct_load(ct_type[0], ct_type[1], ct_type[2]);
+            ct_load(0, ct_type[0], ct_type[1], ct_type[2]);
         }
 
         //// change ct_type layer 2
         if (sdl_event.key.keysym.sym == SDLK_F3 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_type[1] = (ct_type[1] + 1) % CT_TYPE_NB;
-            ct_load(ct_type[0], ct_type[1], ct_type[2]);
+            ct_load(1, ct_type[0], ct_type[1], ct_type[2]);
         }
 
         //// change ct_type layer 3
         if (sdl_event.key.keysym.sym == SDLK_F4 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
             ct_type[2] = (ct_type[2] + 1) % CT_TYPE_NB;
-            ct_load(ct_type[0], ct_type[1], ct_type[2]);
+            ct_load(2, ct_type[0], ct_type[1], ct_type[2]);
+        }
+
+        //// change CTe layer 1
+        if (sdl_event.key.keysym.sym == SDLK_F6 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[0] = MAX(CTe[0] - 1, 0);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F6 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[0] = 192;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F6 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_load(0, ct_type[0], ct_type[1], ct_type[2]);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F6 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[0] = 128;
+        }
+
+        //// change CTe layer 2
+        if (sdl_event.key.keysym.sym == SDLK_F7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[1] = MAX(CTe[1] - 1, 0);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[1] = 192;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F7 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_load(1, ct_type[0], ct_type[1], ct_type[2]);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F7 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[1] = 128;
+        }
+
+        //// change CTe layer 3
+        if (sdl_event.key.keysym.sym == SDLK_F8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[2] = MAX(CTe[2] - 1, 0);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F8 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && !(sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[2] = 192;
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F8 && !(sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            ct_load(2, ct_type[0], ct_type[1], ct_type[2]);
+        }
+
+        if (sdl_event.key.keysym.sym == SDLK_F8 && (sdl_event.key.keysym.mod & KMOD_SHIFT) && (sdl_event.key.keysym.mod & KMOD_CTRL)) {
+            CTe[2] = 128;
         }
 
         //// change bb_type layer 123
@@ -3511,7 +3558,7 @@ void visualisation_thread()
             }
 
             if (tbs == 1) {
-                sprintf(titlebar, "lm%i ct%i%i%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i th%i %g", lr_mode, ct_type[0], ct_type[1], ct_type[2], cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], td_nb, (double)Ppsum);
+                sprintf(titlebar, "lm%i ct%i%i%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cte%i.%i.%i th%i %g", lr_mode, ct_type[0], ct_type[1], ct_type[2], cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], CTe[0], CTe[1], CTe[2], td_nb, (double)Ppsum);
             }
 
             if (tbs == 2) {
