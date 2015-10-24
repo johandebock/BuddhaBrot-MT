@@ -51,7 +51,7 @@ coloringsumfuncparam13 5
 colortablescale3 0
 colortableoffset3 0
 
-numberofcalculationthreads 9
+numberofcalculationthreads 3
 
 pathsplottedthread00 0
 pathsplottedthread01 0

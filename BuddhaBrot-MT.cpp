@@ -1,7 +1,13 @@
 //// Written by Johan De Bock <johan.debock@gmail.com>
 ////
 //// memory requirements : td_nb * (Rw * Rh * 4 + bb_bail * 24) + (Rlrmax[0] + Rlrmax[1] + Rlrmax[2] + 3) * 4 + (Ww * Wh + Tw * Th) * 12
-////
+////   R2000x2000 bb1000 th3 :    48 MB
+////   R4000x4000 bb1000 th3 :   192 MB
+////   R8000x8000 bb1000 th3 :   768 MB
+//// R16000x16000 bb1000 th3 :  3072 MB
+//// R32000x32000 bb1000 th3 : 12288 MB
+//// R40000x40000 bb1000 th3 : 19200 MB
+//// R50000x50000 bb1000 th3 : 30000 MB tested
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -98,7 +104,7 @@ typedef struct {
     double i; // imaginary
 } complex; // complex number
 complex* P[TD_MAX]; // 1 path , per thread
-int* RPo[TD_MAX]; // offsets of a path in render , per thread
+unsigned int* RPo[TD_MAX]; // offsets of a path in render , per thread
 
 long long unsigned int Pp[TD_MAX]; // number of paths plotted , per thread
 
@@ -186,8 +192,8 @@ int Th = 1000; // tile height
 //// coloring method 1 : else          i = 0                               TODO check e * () in code optim
 int cm[LR_NB]; // coloring method , per layer
 #define CM_NB 3 // number of coloring methods
-int cm0n[LR_NB]; // normalization value for coloring method 0 = number of filled bins in histogram = number of unique values in render , per layer
-int cm1n[LR_NB]; // normalization value for coloring method 1 = (number of pixels in render - number of 0 pixels in render) , per layer
+unsigned int cm0n[LR_NB]; // normalization value for coloring method 0 = number of filled bins in histogram = number of unique values in render , per layer
+unsigned int cm1n[LR_NB]; // normalization value for coloring method 1 = (number of pixels in render - number of 0 pixels in render) , per layer
 
 //// csf coloring sum function
 //// sum function 0 : none
@@ -338,7 +344,7 @@ void pause_calcthreads_and_wait()
 void reset_R(int td_i)
 {
     Pp[td_i] = 0;
-    memset(R[td_i], 0, Rw * Rh * sizeof(unsigned int));
+    memset(R[td_i], 0, (unsigned int)Rw * Rh * sizeof(unsigned int));
     Hl[0] = 0;
     Hl[1] = 0;
     Hl[2] = 0;
@@ -355,7 +361,7 @@ void realloc_R(int td_i)
         R[td_i] = NULL;
     }
 
-    R[td_i] = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
+    R[td_i] = (unsigned int*)calloc((unsigned int)Rw * Rh, sizeof(unsigned int));
     Hl[0] = 0;
     Hl[1] = 0;
     Hl[2] = 0;
@@ -377,7 +383,7 @@ void realloc_P(int td_i)
         RPo[td_i] = NULL;
     }
 
-    RPo[td_i] = (int*)calloc(2 * bb_bail[td_i], sizeof(int));
+    RPo[td_i] = (unsigned int*)calloc(2 * bb_bail[td_i], sizeof(unsigned int));
 }
 
 void free_calcthread(int td_i)
@@ -412,7 +418,7 @@ void decrease_num_calcthreads()
     int new_num_calcthreads = MAX(td_nb - 3, 3);
 
     for (int td_i = new_num_calcthreads; td_i < td_nb; td_i++) {
-        for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+        for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
             R[td_i % 3][Ri] += R[td_i][Ri];
         }
 
@@ -738,18 +744,18 @@ void calculation_thread(int td_i)
                             minimum_one_point_inside_window = 1;
                             int ix = Rhdivr * (P[td_i][xy_p].r - Rr_lo);
                             int iy = Rwdivi * (P[td_i][xy_p].i - Ri_lo);
-                            RPo[td_i][offset_count++] = ix * Rw + iy;
+                            RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iy;
 
                             if ((-P[td_i][xy_p].i >= Ri_lo) && (-P[td_i][xy_p].i < Ri_up)) {
                                 int iyc = Rwdivi * (-P[td_i][xy_p].i - Ri_lo);
-                                RPo[td_i][offset_count++] = ix * Rw + iyc;
+                                RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iyc;
                             }
                         } else {
                             if ((-P[td_i][xy_p].i >= Ri_lo) && (-P[td_i][xy_p].i < Ri_up)) {
                                 minimum_one_point_inside_window = 1;
                                 int ix = Rhdivr * (P[td_i][xy_p].r - Rr_lo);
                                 int iyc = Rwdivi * (-P[td_i][xy_p].i - Ri_lo);
-                                RPo[td_i][offset_count++] = ix * Rw + iyc;
+                                RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iyc;
                             }
                         }
                     }
@@ -786,18 +792,18 @@ void calculation_thread(int td_i)
                             minimum_one_point_inside_window = 1;
                             int ix = Rhdivr * (P[td_i][xy_p].r - Rr_lo);
                             int iy = Rwdivi * (P[td_i][xy_p].i - Ri_lo);
-                            RPo[td_i][offset_count++] = ix * Rw + iy;
+                            RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iy;
 
                             if ((-P[td_i][xy_p].i >= Ri_lo) && (-P[td_i][xy_p].i < Ri_up)) {
                                 int iyc = Rwdivi * (-P[td_i][xy_p].i - Ri_lo);
-                                RPo[td_i][offset_count++] = ix * Rw + iyc;
+                                RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iyc;
                             }
                         } else {
                             if ((-P[td_i][xy_p].i >= Ri_lo) && (-P[td_i][xy_p].i < Ri_up)) {
                                 minimum_one_point_inside_window = 1;
                                 int ix = Rhdivr * (P[td_i][xy_p].r - Rr_lo);
                                 int iyc = Rwdivi * (-P[td_i][xy_p].i - Ri_lo);
-                                RPo[td_i][offset_count++] = ix * Rw + iyc;
+                                RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iyc;
                             }
                         }
                     }
@@ -845,18 +851,18 @@ void calculation_thread(int td_i)
                             minimum_one_point_inside_window = 1;
                             int ix = Rhdivr * (P[td_i][xy_p].r - Rr_lo);
                             int iy = Rwdivi * (P[td_i][xy_p].i - Ri_lo);
-                            RPo[td_i][offset_count++] = ix * Rw + iy;
+                            RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iy;
 
                             if ((-P[td_i][xy_p].i >= Ri_lo) && (-P[td_i][xy_p].i < Ri_up)) {
                                 int iyc = Rwdivi * (-P[td_i][xy_p].i - Ri_lo);
-                                RPo[td_i][offset_count++] = ix * Rw + iyc;
+                                RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iyc;
                             }
                         } else {
                             if ((-P[td_i][xy_p].i >= Ri_lo) && (-P[td_i][xy_p].i < Ri_up)) {
                                 minimum_one_point_inside_window = 1;
                                 int ix = Rhdivr * (P[td_i][xy_p].r - Rr_lo);
                                 int iyc = Rwdivi * (-P[td_i][xy_p].i - Ri_lo);
-                                RPo[td_i][offset_count++] = ix * Rw + iyc;
+                                RPo[td_i][offset_count++] = (unsigned int)ix * Rw + iyc;
                             }
                         }
                     }
@@ -987,7 +993,7 @@ int save_status_files()
 
         for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
             for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
-                int Ri = Ry * Rw + Rx;
+                unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                 unsigned int sum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1013,7 +1019,7 @@ int save_status_files()
 
             for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
                 for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
-                    int Ri = Ry * Rw + Rx;
+                    unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                     unsigned int sum = 0;
 
                     for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1040,7 +1046,7 @@ int save_status_files()
 
             for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
                 for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
-                    int Ri = Ry * Rw + Rx;
+                    unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                     unsigned int sum = 0;
 
                     for (int td_i = layer_iter; td_i < td_nb; td_i += LR_NB) {
@@ -1073,7 +1079,7 @@ int save_status_files()
             return (0);
         }
 
-        fwrite(R[td_i], sizeof(unsigned int), Rw * Rh, status_file);
+        fwrite(R[td_i], sizeof(unsigned int), (unsigned int)Rw * Rh, status_file);
         fclose(status_file);
     }
 
@@ -1098,7 +1104,7 @@ int load_status_files()
             return (0);
         }
 
-        if (fread(R[td_i], sizeof(unsigned int), Rw * Rh, status_file)) {}
+        if (fread(R[td_i], sizeof(unsigned int), (unsigned int)Rw * Rh, status_file)) {}
 
         fclose(status_file);
     }
@@ -1113,7 +1119,7 @@ int load_status_files_minmem()
     reponsive_caption_update("BuddhaBrot-MT: loading status: pausing calculation threads...");
     pause_calcthreads_and_wait();
     int original_num_calcthreads = load_param_file(0, 1, 1);
-    unsigned int* tmp_R = (unsigned int*)calloc(Rw * Rh, sizeof(unsigned int));
+    unsigned int* tmp_R = (unsigned int*)calloc((unsigned int)Rw * Rh, sizeof(unsigned int));
 
     for (int td_i = 0; td_i < 3; td_i++) {
         sprintf(titlebar, "BuddhaBrot-MT: loading status: loading render count matrix of thread %i...", td_i);
@@ -1125,7 +1131,7 @@ int load_status_files_minmem()
             return (0);
         }
 
-        if (fread(R[td_i], sizeof(unsigned int), Rw * Rh, status_file)) {}
+        if (fread(R[td_i], sizeof(unsigned int), (unsigned int)Rw * Rh, status_file)) {}
 
         fclose(status_file);
     }
@@ -1140,9 +1146,9 @@ int load_status_files_minmem()
             return (0);
         }
 
-        if (fread(tmp_R, sizeof(unsigned int), Rw * Rh, status_file)) {}
+        if (fread(tmp_R, sizeof(unsigned int), (unsigned int)Rw * Rh, status_file)) {}
 
-        for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+        for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
             R[td_i % 3][Ri] += tmp_R[Ri];
         }
 
@@ -1165,7 +1171,7 @@ void writeRtoPNG(const char* filename)
     if (lr_mode == 0) {
         Rlrmax[0] = 0;
 
-        for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+        for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
             unsigned int sum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1210,7 +1216,7 @@ void writeRtoPNG(const char* filename)
             H[2] = NULL;
         }
 
-        for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+        for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
             unsigned int sum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1237,7 +1243,7 @@ void writeRtoPNG(const char* filename)
         }
 
         if (cm[0] == 1) {
-            cm1n[0] = Rw * Rh - H[0][0];
+            cm1n[0] = (unsigned int)Rw * Rh - H[0][0];
             H[0][0] = 0;
 
             for (unsigned int i = 2; i <= Rlrmax[0]; i++) {
@@ -1250,7 +1256,7 @@ void writeRtoPNG(const char* filename)
         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
             Rlrmax[layer_iter] = 0;
 
-            for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+            for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
                 unsigned int sum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1280,7 +1286,7 @@ void writeRtoPNG(const char* filename)
                 memset(H[layer_iter], 0, Hl[layer_iter] * sizeof(unsigned int));
             }
 
-            for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+            for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
                 unsigned int sum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1307,7 +1313,7 @@ void writeRtoPNG(const char* filename)
             }
 
             if (cm[layer_iter] == 1) {
-                cm1n[layer_iter] = Rw * Rh - H[layer_iter][0];
+                cm1n[layer_iter] = (unsigned int)Rw * Rh - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
                 for (unsigned int i = 2; i <= Rlrmax[layer_iter]; i++) {
@@ -1321,7 +1327,7 @@ void writeRtoPNG(const char* filename)
         for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
             Rlrmax[layer_iter] = 0;
 
-            for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+            for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
                 unsigned int sum = 0;
 
                 for (int td_i = layer_iter; td_i < td_nb; td_i += LR_NB) {
@@ -1351,7 +1357,7 @@ void writeRtoPNG(const char* filename)
                 memset(H[layer_iter], 0, Hl[layer_iter] * sizeof(unsigned int));
             }
 
-            for (int Ri = 0; Ri < Rw * Rh; Ri++) {
+            for (unsigned int Ri = 0; Ri < (unsigned int)Rw * Rh; Ri++) {
                 unsigned int sum = 0;
 
                 for (int td_i = layer_iter; td_i < td_nb; td_i += LR_NB) {
@@ -1378,7 +1384,7 @@ void writeRtoPNG(const char* filename)
             }
 
             if (cm[layer_iter] == 1) {
-                cm1n[layer_iter] = Rw * Rh - H[layer_iter][0];
+                cm1n[layer_iter] = (unsigned int)Rw * Rh - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
                 for (unsigned int i = 2; i <= Rlrmax[layer_iter]; i++) {
@@ -1399,12 +1405,12 @@ void writeRtoPNG(const char* filename)
 
     if (lr_mode == 0) {
         if (cm[0] == 0) {
-            for (int y = 0; y < Rh; y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+            for (int png_y = 0; png_y < Rh; png_y++) {
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
-                for (int x = 0; x < Rw; x++) {
-                    int Ri = y * Rw + x;
+                for (int png_x = 0; png_x < Rw; png_x++) {
+                    unsigned int Ri = (unsigned int)png_y * Rw + png_x;
                     unsigned int sum = 0;
 
                     for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1424,9 +1430,9 @@ void writeRtoPNG(const char* filename)
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0], CTe[0]);
-                    row_buffer[x * 3 + 0] = CT[0][ct_i];
-                    row_buffer[x * 3 + 1] = CT[0][ct_i];
-                    row_buffer[x * 3 + 2] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 0] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 1] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 2] = CT[0][ct_i];
                 }
 
                 png_write_row(png_ptr, row_buffer);
@@ -1434,12 +1440,12 @@ void writeRtoPNG(const char* filename)
         }
 
         if (cm[0] == 1) {
-            for (int y = 0; y < Rh; y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+            for (int png_y = 0; png_y < Rh; png_y++) {
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
-                for (int x = 0; x < Rw; x++) {
-                    int Ri = y * Rw + x;
+                for (int png_x = 0; png_x < Rw; png_x++) {
+                    unsigned int Ri = (unsigned int)png_y * Rw + png_x;
                     unsigned int sum = 0;
 
                     for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1459,9 +1465,9 @@ void writeRtoPNG(const char* filename)
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0], CTe[0]);
-                    row_buffer[x * 3 + 0] = CT[0][ct_i];
-                    row_buffer[x * 3 + 1] = CT[0][ct_i];
-                    row_buffer[x * 3 + 2] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 0] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 1] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 2] = CT[0][ct_i];
                 }
 
                 png_write_row(png_ptr, row_buffer);
@@ -1469,12 +1475,12 @@ void writeRtoPNG(const char* filename)
         }
 
         if (cm[0] == 2) {
-            for (int y = 0; y < Rh; y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+            for (int png_y = 0; png_y < Rh; png_y++) {
+                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
-                for (int x = 0; x < Rw; x++) {
-                    int Ri = y * Rw + x;
+                for (int png_x = 0; png_x < Rw; png_x++) {
+                    unsigned int Ri = (unsigned int)png_y * Rw + png_x;
                     unsigned int sum = 0;
 
                     for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1494,9 +1500,9 @@ void writeRtoPNG(const char* filename)
                     }
 
                     ct_i = ct_cycle(ct_i + ct_o[0], CTe[0]);
-                    row_buffer[x * 3 + 0] = CT[0][ct_i];
-                    row_buffer[x * 3 + 1] = CT[0][ct_i];
-                    row_buffer[x * 3 + 2] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 0] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 1] = CT[0][ct_i];
+                    row_buffer[png_x * 3 + 2] = CT[0][ct_i];
                 }
 
                 png_write_row(png_ptr, row_buffer);
@@ -1505,12 +1511,12 @@ void writeRtoPNG(const char* filename)
     }
 
     if (lr_mode == 1) {
-        for (int y = 0; y < Rh; y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+        for (int png_y = 0; png_y < Rh; png_y++) {
+            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
             reponsive_caption_update(titlebar);
 
-            for (int x = 0; x < Rw; x++) {
-                int Ri = y * Rw + x;
+            for (int png_x = 0; png_x < Rw; png_x++) {
+                unsigned int Ri = (unsigned int)png_y * Rw + png_x;
                 int ct_i[LR_NB] = {0};
 
                 for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
@@ -1547,9 +1553,9 @@ void writeRtoPNG(const char* filename)
                     ct_i[layer_iter] = ct_cycle(ct_i[layer_iter] + ct_o[layer_iter], CTe[layer_iter]);
                 }
 
-                row_buffer[x * 3 + 0] = CT[0][ct_i[0]];
-                row_buffer[x * 3 + 1] = CT[1][ct_i[1]];
-                row_buffer[x * 3 + 2] = CT[2][ct_i[2]];
+                row_buffer[png_x * 3 + 0] = CT[0][ct_i[0]];
+                row_buffer[png_x * 3 + 1] = CT[1][ct_i[1]];
+                row_buffer[png_x * 3 + 2] = CT[2][ct_i[2]];
             }
 
             png_write_row(png_ptr, row_buffer);
@@ -1557,12 +1563,12 @@ void writeRtoPNG(const char* filename)
     }
 
     if (lr_mode == 2) {
-        for (int y = 0; y < Rh; y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)y / Rh * 100);
+        for (int png_y = 0; png_y < Rh; png_y++) {
+            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
             reponsive_caption_update(titlebar);
 
-            for (int x = 0; x < Rw; x++) {
-                int Ri = y * Rw + x;
+            for (int png_x = 0; png_x < Rw; png_x++) {
+                unsigned int Ri = (unsigned int)png_y * Rw + png_x;
                 int ct_i[LR_NB] = {0};
 
                 for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
@@ -1599,9 +1605,9 @@ void writeRtoPNG(const char* filename)
                     ct_i[layer_iter] = ct_cycle(ct_i[layer_iter] + ct_o[layer_iter], CTe[layer_iter]);
                 }
 
-                row_buffer[x * 3 + 0] = CT[0][ct_i[0]];
-                row_buffer[x * 3 + 1] = CT[1][ct_i[1]];
-                row_buffer[x * 3 + 2] = CT[2][ct_i[2]];
+                row_buffer[png_x * 3 + 0] = CT[0][ct_i[0]];
+                row_buffer[png_x * 3 + 1] = CT[1][ct_i[1]];
+                row_buffer[png_x * 3 + 2] = CT[2][ct_i[2]];
             }
 
             png_write_row(png_ptr, row_buffer);
@@ -1627,7 +1633,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
     pause_calcthreads_and_wait();
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
-        T[layer_iter] = (unsigned int*)calloc(local_png_width * local_png_height, sizeof(unsigned int));
+        T[layer_iter] = (unsigned int*)calloc((unsigned int)local_png_width * local_png_height, sizeof(unsigned int));
     }
 
     if (lr_mode == 0) {
@@ -1635,7 +1641,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
 
         for (int png_y = 0, Ry = local_png_offset_y; png_y < local_png_height; png_y++, Ry++) {
             for (int png_x = 0, Rx = local_png_offset_x; png_x < local_png_width; png_x++, Rx++) {
-                int Ri = Ry * Rw + Rx;
+                unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                 unsigned int sum = 0;
 
                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1700,7 +1706,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
         }
 
         if (cm[0] == 1) {
-            cm1n[0] = local_png_width * local_png_height - H[0][0];
+            cm1n[0] = (unsigned int)local_png_width * local_png_height - H[0][0];
             H[0][0] = 0;
 
             for (unsigned int i = 2; i <= Rlrmax[0]; i++) {
@@ -1715,7 +1721,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
 
             for (int png_y = 0, Ry = local_png_offset_y; png_y < local_png_height; png_y++, Ry++) {
                 for (int png_x = 0, Rx = local_png_offset_x; png_x < local_png_width; png_x++, Rx++) {
-                    int Ri = Ry * Rw + Rx;
+                    unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                     unsigned int sum = 0;
 
                     for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -1765,7 +1771,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
             }
 
             if (cm[layer_iter] == 1) {
-                cm1n[layer_iter] = local_png_width * local_png_height - H[layer_iter][0];
+                cm1n[layer_iter] = (unsigned int)local_png_width * local_png_height - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
                 for (unsigned int i = 2; i <= Rlrmax[layer_iter]; i++) {
@@ -1781,7 +1787,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
 
             for (int png_y = 0, Ry = local_png_offset_y; png_y < local_png_height; png_y++, Ry++) {
                 for (int png_x = 0, Rx = local_png_offset_x; png_x < local_png_width; png_x++, Rx++) {
-                    int Ri = Ry * Rw + Rx;
+                    unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                     unsigned int sum = 0;
 
                     for (int td_i = layer_iter; td_i < td_nb; td_i += LR_NB) {
@@ -1831,7 +1837,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
             }
 
             if (cm[layer_iter] == 1) {
-                cm1n[layer_iter] = local_png_width * local_png_height - H[layer_iter][0];
+                cm1n[layer_iter] = (unsigned int)local_png_width * local_png_height - H[layer_iter][0];
                 H[layer_iter][0] = 0;
 
                 for (unsigned int i = 2; i <= Rlrmax[layer_iter]; i++) {
@@ -3218,7 +3224,7 @@ void visualisation_thread()
 
                     for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
                         for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
-                            int Ri = Ry * Rw + Rx;
+                            unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                             unsigned int sum = 0;
 
                             for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -3298,7 +3304,7 @@ void visualisation_thread()
 
                         for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
                             for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
-                                int Ri = Ry * Rw + Rx;
+                                unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                                 unsigned int sum = 0;
 
                                 for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -3364,7 +3370,7 @@ void visualisation_thread()
 
                         for (int Wy = 0, Ry = RWoh; Wy < Wh; Wy++, Ry++) {
                             for (int Wx = 0, Rx = RWow; Wx < Ww; Wx++, Rx++) {
-                                int Ri = Ry * Rw + Rx;
+                                unsigned int Ri = (unsigned int)Ry * Rw + Rx;
                                 unsigned int sum = 0;
 
                                 for (int td_i = layer_iter; td_i < td_nb; td_i += LR_NB) {
