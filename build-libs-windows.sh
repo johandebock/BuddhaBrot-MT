@@ -2,8 +2,8 @@ export PATH=".:/usr/local/bin:/mingw/bin:/bin:$PATH"
 # http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.3/threads-win32/sjlj/x86_64-4.9.3-release-win32-sjlj-rt_v4-rev1.7z/download
 export PATH="/c/mingw-x86_64-4.9.3-release-win32-sjlj-rt_v4-rev1/bin:$PATH"
 
-mkdir png-windows-64bit-mingw
-cd png-windows-64bit-mingw
+mkdir png-windows
+cd png-windows
 wget http://prdownloads.sourceforge.net/libpng/zlib-1.2.8.tar.gz?download
 wget http://prdownloads.sourceforge.net/libpng/libpng-1.6.18.tar.gz?download
 tar -zxf zlib-1.2.8.tar.gz
@@ -33,8 +33,8 @@ rm -R zlib/
 rm -R libpng/
 cd ..
 
-mkdir SDL-windows-64bit-mingw
-cd SDL-windows-64bit-mingw
+mkdir SDL-windows
+cd SDL-windows
 wget --no-check-certificate https://www.libsdl.org/release/SDL2-devel-2.0.3-mingw.tar.gz
 tar -zxf SDL2-devel-2.0.3-mingw.tar.gz
 rm SDL2-devel-2.0.3-mingw.tar.gz
