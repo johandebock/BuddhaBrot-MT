@@ -8,6 +8,7 @@
 //// R32000x32000 bb1000 th3 : 12288 MB
 //// R40000x40000 bb1000 th3 : 19200 MB
 //// R50000x50000 bb1000 th3 : 30000 MB tested
+#define __USE_MINGW_ANSI_STDIO 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -894,11 +895,11 @@ int save_param_file()
     fprintf(parameters_file, "\n");
 
     for (int td_i = 0; td_i < TD_MAX; td_i++) {
-        fprintf(parameters_file, "pathsplottedthread%02d %I64u\n", td_i, Pp[td_i]);
+        fprintf(parameters_file, "pathsplottedthread%02d %llu\n", td_i, Pp[td_i]);
     }
 
     fprintf(parameters_file, "\n");
-    fprintf(parameters_file, "pathsplottedsum %I64u\n", Ppsum);
+    fprintf(parameters_file, "pathsplottedsum %llu\n", Ppsum);
     fprintf(parameters_file, "\n");
     fprintf(parameters_file, "rendercountmatrixmax1 %d\n", Rlrmax[0]);
     fprintf(parameters_file, "rendercountmatrixmax2 %d\n", Rlrmax[1]);
@@ -961,7 +962,7 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
         for (int td_i = 0; td_i < TD_MAX; td_i++) {
             int temp;
 
-            if (fscanf(parameters_file, "pathsplottedthread%d %I64u\n", &temp, &Pp[td_i])) {}
+            if (fscanf(parameters_file, "pathsplottedthread%d %llu\n", &temp, &Pp[td_i])) {}
         }
     }
 
