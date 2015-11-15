@@ -1993,7 +1993,9 @@ void writeRTtoPNG_and_generate_filenames()
     }
 
     sprintf(commandname, "mkdir \"%s\"", dirname);
-    system(commandname);
+
+    if (system(commandname)) {
+    }
 
     for (int png_offset_x = 0; png_offset_x < Rw; png_offset_x += Tw) {
         for (int png_offset_y = 0; png_offset_y < Rh; png_offset_y += Th) {
