@@ -2093,7 +2093,7 @@ void batch_render()
         Ppsum = 0;
 
         while (Ppsum < Ppsum_autoPNG_delta) {
-            wait_ms(1000);
+            wait_ms(100);
             Ppsum = 0;
 
             for (int td_i = 0; td_i < td_nb; td_i += 1) {
@@ -2102,6 +2102,7 @@ void batch_render()
 
             printf("\r                                                                                ");
             printf("\r#paths potted = %g", (double)Ppsum);
+            fflush(stdout);
         }
 
         cm[0] = 0;
