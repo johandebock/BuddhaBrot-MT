@@ -2086,34 +2086,32 @@ void load_param_file_thread()
 
 void batch_render()
 {
-    for (int bail_offset = 10; bail_offset < 1000000; bail_offset *= 10) {
-        for (int bail = bail_offset; bail < bail_offset * 10; bail += bail_offset) {
-            printf("\r                                                                                ");
-            printf("\rbail = %i\n", bail);
-            load_location_bb_color_param(1, 1.8, -0.4, 0.0, 16000, 16000, 0, 0, bail, 0, 0, 0, 0, bail, 0, 0, 0, 0, bail, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+    for (int bail = 10; bail <= 1000000; bail *= 10) {
+        printf("\r                                                                                ");
+        printf("\rbail = %i\n", bail);
+        load_location_bb_color_param(1, 1.8, -0.4, 0.0, 16000, 16000, 0, 0, bail, 0, 0, 0, 0, bail, 0, 0, 0, 0, bail, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+        Ppsum = 0;
+
+        while (Ppsum < Ppsum_autoPNG_delta) {
+            wait_ms(1000);
             Ppsum = 0;
 
-            while (Ppsum < Ppsum_autoPNG_delta) {
-                wait_ms(100);
-                Ppsum = 0;
-
-                for (int td_i = 0; td_i < td_nb; td_i += 1) {
-                    Ppsum += Pp[td_i];
-                }
-
-                printf("\r                                                                                ");
-                printf("\r#paths potted = %g", (double)Ppsum);
+            for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                Ppsum += Pp[td_i];
             }
 
-            cm[0] = 0;
-            cm[1] = 0;
-            cm[2] = 0;
-            writeRTtoPNG_and_generate_filenames();
-            cm[0] = 1;
-            cm[1] = 1;
-            cm[2] = 1;
-            writeRTtoPNG_and_generate_filenames();
+            printf("\r                                                                                ");
+            printf("\r#paths potted = %g", (double)Ppsum);
         }
+
+        cm[0] = 0;
+        cm[1] = 0;
+        cm[2] = 0;
+        writeRTtoPNG_and_generate_filenames();
+        cm[0] = 1;
+        cm[1] = 1;
+        cm[2] = 1;
+        writeRTtoPNG_and_generate_filenames();
     }
 
     td_stop = 1;
