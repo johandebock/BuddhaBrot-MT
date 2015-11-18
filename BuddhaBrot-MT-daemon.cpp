@@ -2086,10 +2086,11 @@ void load_param_file_thread()
 
 void batch_render()
 {
-    for (int bail = 10; bail <= 1000000; bail *= 10) {
+    for (int bail = 10; bail <= 100000000; bail *= 10) {
+        int minn = 0;
         printf("\r                                                                                ");
-        printf("\rbail = %i\n", bail);
-        load_location_bb_color_param(1, 1.8, -0.4, 0.0, 16000, 16000, 0, 0, bail, 0, 0, 0, 0, bail, 0, 0, 0, 0, bail, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+        printf("\rbail %i   minn %i\n", bail, minn);
+        load_location_bb_color_param(1, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
         Ppsum = 0;
 
         while (Ppsum < Ppsum_autoPNG_delta) {
@@ -2108,10 +2109,12 @@ void batch_render()
         cm[0] = 0;
         cm[1] = 0;
         cm[2] = 0;
+        writeRtoPNG_and_generate_filename();
         writeRTtoPNG_and_generate_filenames();
         cm[0] = 1;
         cm[1] = 1;
         cm[2] = 1;
+        writeRtoPNG_and_generate_filename();
         writeRTtoPNG_and_generate_filenames();
     }
 
