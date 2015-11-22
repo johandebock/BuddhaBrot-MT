@@ -691,6 +691,7 @@ void calculation_thread(int td_i)
                         if (n_inf < bb_bail[td_i]) {
                             printf("\r                                                                                ");
                             printf("\rfix! notMset %f %f\n", c.r, c.i);
+                            fflush(stdout);
                         }
                     }
                 }
@@ -946,6 +947,7 @@ int save_status_files()
 {
     printf("\r                                                                                ");
     printf("\rsaving status...");
+    fflush(stdout);
     pause_calcthreads_and_wait();
     Ppsum = 0;
 
@@ -1051,6 +1053,7 @@ int save_status_files()
     td_pause = 0;
     #pragma omp flush(td_pause)
     printf("done");
+    fflush(stdout);
     return (1);
 }
 
@@ -1058,6 +1061,7 @@ int load_status_files()
 {
     printf("\r                                                                                ");
     printf("\rloading status...");
+    fflush(stdout);
     pause_calcthreads_and_wait();
     load_param_file(0, 1, 0);
 
@@ -1077,6 +1081,7 @@ int load_status_files()
     td_pause = 0;
     #pragma omp flush(td_pause)
     printf("done");
+    fflush(stdout);
     return (1);
 }
 
@@ -1084,6 +1089,7 @@ int load_status_files_minmem()
 {
     printf("\r                                                                                ");
     printf("\rloading status...");
+    fflush(stdout);
     pause_calcthreads_and_wait();
     int original_num_calcthreads = load_param_file(0, 1, 1);
     unsigned int* tmp_R = (unsigned int*)calloc((unsigned int)Rw * Rh, sizeof(unsigned int));
@@ -1124,6 +1130,7 @@ int load_status_files_minmem()
     td_pause = 0;
     #pragma omp flush(td_pause)
     printf("done");
+    fflush(stdout);
     return (1);
 }
 
@@ -1131,6 +1138,7 @@ void writeRtoPNG(const char* filename)
 {
     printf("\r                                                                                ");
     printf("\rwriting to png...");
+    fflush(stdout);
     pause_calcthreads_and_wait();
 
     if (lr_mode == 0) {
@@ -1576,12 +1584,14 @@ void writeRtoPNG(const char* filename)
     td_pause = 0;
     #pragma omp flush(td_pause)
     printf("done");
+    fflush(stdout);
 }
 
 void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y, int local_png_width, int local_png_height)
 {
     printf("\r                                                                                ");
     printf("\rwriting to png...");
+    fflush(stdout);
     pause_calcthreads_and_wait();
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
@@ -1959,6 +1969,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
     td_pause = 0;
     #pragma omp flush(td_pause)
     printf("done");
+    fflush(stdout);
 }
 
 void writeRtoPNG_and_generate_filename()
@@ -2041,6 +2052,7 @@ void load_status_files_thread()
     memory_usage /= 1024 * 1024 * 1024;
     printf("\r                                                                                ");
     printf("\rstarted: calcthreads %i   mem %.3f\n", td_nb, memory_usage);
+    fflush(stdout);
 
     while (1) {
         wait_ms(100);
@@ -2070,6 +2082,7 @@ void load_param_file_thread()
     memory_usage /= 1024 * 1024 * 1024;
     printf("\r                                                                                ");
     printf("\rstarted: calcthreads %i   mem %.3f\n", td_nb, memory_usage);
+    fflush(stdout);
 
     while (1) {
         wait_ms(100);
@@ -2092,6 +2105,7 @@ void batch_render()
         int minn = 0;
         printf("\r                                                                                ");
         printf("\rbail %i   minn %i\n", bail, minn);
+        fflush(stdout);
         load_location_bb_color_param(1, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
         Ppsum = 0;
 
