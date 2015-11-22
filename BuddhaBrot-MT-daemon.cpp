@@ -2051,7 +2051,8 @@ void load_status_files_thread()
         }
 
         printf("\r                                                                                ");
-        printf("\r#paths potted = %g", (double)Ppsum);
+        printf("\r#paths plotted = %g", (double)Ppsum);
+        fflush(stdout);
         auto_writetoPNG(1);
     }
 }
@@ -2079,7 +2080,8 @@ void load_param_file_thread()
         }
 
         printf("\r                                                                                ");
-        printf("\r#paths potted = %g", (double)Ppsum);
+        printf("\r#paths plotted = %g", (double)Ppsum);
+        fflush(stdout);
         auto_writetoPNG(1);
     }
 }
@@ -2102,7 +2104,7 @@ void batch_render()
             }
 
             printf("\r                                                                                ");
-            printf("\r#paths potted = %g", (double)Ppsum);
+            printf("\r#paths plotted = %g", (double)Ppsum);
             fflush(stdout);
         }
 
