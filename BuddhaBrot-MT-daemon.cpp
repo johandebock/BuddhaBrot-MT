@@ -41,12 +41,9 @@ char dirname[512];
 char commandname[512];
 
 //// keep total number of paths plotted for a render
-long long unsigned int Ppsum;
+long long unsigned int Ppsum = 0;
 
 //// auto write png functionality
-//// auto write mode 0 : auto write render to one png
-//// auto write mode 1 : auto write tiled render to multiple pngs
-int autoPNG = 0; // auto write window to one png
 long long unsigned int Ppsum_autoPNG_last = 0; // Ppsum of last written auto png
 long long unsigned int Ppsum_autoPNG_delta = 1e9; // Ppsum difference between each auto png write, default 1e9
 
@@ -152,8 +149,8 @@ int recalc_WH_if_paused = 0; // indicate that H and W need to be recalculated wh
 //// for the pixels outputted to a png image
 //// it is located somewhere in the render
 unsigned int* T[LR_NB]; // 1 tile , per layer
-int Tw = 1000; // tile width
-int Th = 1000; // tile height
+int Tw = 4000; // tile width
+int Th = 4000; // tile height
 
 //// cm coloring methods
 //// coloring method 0 : rank-order mapping : each unique sum get a unique color : independent of sum frequency
@@ -423,11 +420,12 @@ void load_location(int pause_calcthreads, double load_zoom, double load_centerx,
         pause_calcthreads_and_wait();
     }
 
-    double rangediv2 = 2.0 / load_zoom;
-    Rr_lo = load_centerx - rangediv2;
-    Rr_up = load_centerx + rangediv2;
-    Ri_lo = load_centery - rangediv2;
-    Ri_up = load_centery + rangediv2;
+    double rangediv2x = 2.0 / load_zoom;
+    double rangediv2y = 1.0 / load_zoom;
+    Rr_lo = load_centerx - rangediv2x;
+    Rr_up = load_centerx + rangediv2x;
+    Ri_lo = load_centery - rangediv2y;
+    Ri_up = load_centery + rangediv2y;
     Rr_ra = Rr_up - Rr_lo;
     Ri_ra = Ri_up - Ri_lo;
 
@@ -853,7 +851,7 @@ int save_param_file()
 {
     FILE* parameters_file;
 
-    if ((parameters_file = fopen("BuddhaBrot-MT-parameters.txt", "wb")) == NULL) {
+    if ((parameters_file = fopen("BuddhaBrot-MT-daemon-parameters.txt", "wb")) == NULL) {
         return (0);
     }
 
@@ -878,7 +876,7 @@ int load_param_file(int pause_calcthreads, int load_status_files, int minmem)
 {
     FILE* parameters_file;
 
-    if ((parameters_file = fopen("BuddhaBrot-MT-parameters.txt", "rb")) == NULL) {
+    if ((parameters_file = fopen("BuddhaBrot-MT-daemon-parameters.txt", "rb")) == NULL) {
         return (0);
     }
 
@@ -2020,52 +2018,45 @@ void writeRTtoPNG_and_generate_filenames()
     }
 }
 
-void auto_writetoPNG(int save_status)
-{
-    if ((autoPNG == 0 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
-        writeRtoPNG_and_generate_filename();
-    }
-
-    if ((autoPNG == 1 && (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta))) {
-        writeRTtoPNG_and_generate_filenames();
-    }
-
-    if (Ppsum > Ppsum_autoPNG_last + Ppsum_autoPNG_delta) {
-        Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
-
-        if (save_status == 1) {
-            save_status_files();
-        }
-    }
-}
-
 void load_status_files_thread()
 {
     load_status_files();
     double memory_usage = 0;
-    memory_usage += Rw * Rh * 4 * td_nb;
-    memory_usage += bb_bail[0] * 24 * td_nb / 3;
-    memory_usage += bb_bail[1] * 24 * td_nb / 3;
-    memory_usage += bb_bail[2] * 24 * td_nb / 3;
-    memory_usage += (Rlrmax[0] + Rlrmax[1] + Rlrmax[2] + 3) * 4;
-    memory_usage += (Ww * Wh + Tw * Th) * 12;
-    memory_usage /= 1024 * 1024 * 1024;
+    memory_usage += (double)Rw * Rh * 4 * td_nb;
+    memory_usage += (double)bb_bail[0] * 24 * td_nb / 3;
+    memory_usage += (double)bb_bail[1] * 24 * td_nb / 3;
+    memory_usage += (double)bb_bail[2] * 24 * td_nb / 3;
+    memory_usage += ((double)Rlrmax[0] + Rlrmax[1] + Rlrmax[2] + 3) * 4;
+    memory_usage += ((double)Ww * Wh + Tw * Th) * 12;
+    memory_usage /= 1024.0 * 1024.0 * 1024.0;
     printf("\r                                                                                ");
     printf("\rstarted: calcthreads %i   mem %.3f\n", td_nb, memory_usage);
     fflush(stdout);
 
     while (1) {
-        wait_ms(100);
-        Ppsum = 0;
+        while (Ppsum < Ppsum_autoPNG_last + Ppsum_autoPNG_delta) {
+            wait_ms(100);
+            Ppsum = 0;
 
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            Ppsum += Pp[td_i];
+            for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                Ppsum += Pp[td_i];
+            }
+
+            printf("\r                                                                                ");
+            printf("\r#paths plotted = %g", (double)Ppsum);
+            fflush(stdout);
         }
 
-        printf("\r                                                                                ");
-        printf("\r#paths plotted = %g", (double)Ppsum);
-        fflush(stdout);
-        auto_writetoPNG(1);
+        cm[0] = 0;
+        cm[1] = 0;
+        cm[2] = 0;
+        writeRTtoPNG_and_generate_filenames();
+        cm[0] = 1;
+        cm[1] = 1;
+        cm[2] = 1;
+        writeRTtoPNG_and_generate_filenames();
+        save_status_files();
+        Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
     }
 }
 
@@ -2073,40 +2064,52 @@ void load_param_file_thread()
 {
     load_param_file(1, 0, 0);
     double memory_usage = 0;
-    memory_usage += Rw * Rh * 4 * td_nb;
-    memory_usage += bb_bail[0] * 24 * td_nb / 3;
-    memory_usage += bb_bail[1] * 24 * td_nb / 3;
-    memory_usage += bb_bail[2] * 24 * td_nb / 3;
-    memory_usage += (Rlrmax[0] + Rlrmax[1] + Rlrmax[2] + 3) * 4;
-    memory_usage += (Ww * Wh + Tw * Th) * 12;
-    memory_usage /= 1024 * 1024 * 1024;
+    memory_usage += (double)Rw * Rh * 4 * td_nb;
+    memory_usage += (double)bb_bail[0] * 24 * td_nb / 3;
+    memory_usage += (double)bb_bail[1] * 24 * td_nb / 3;
+    memory_usage += (double)bb_bail[2] * 24 * td_nb / 3;
+    memory_usage += ((double)Rlrmax[0] + Rlrmax[1] + Rlrmax[2] + 3) * 4;
+    memory_usage += ((double)Ww * Wh + Tw * Th) * 12;
+    memory_usage /= 1024.0 * 1024.0 * 1024.0;
     printf("\r                                                                                ");
     printf("\rstarted: calcthreads %i   mem %.3f\n", td_nb, memory_usage);
     fflush(stdout);
 
     while (1) {
-        wait_ms(100);
-        Ppsum = 0;
+        while (Ppsum < Ppsum_autoPNG_last + Ppsum_autoPNG_delta) {
+            wait_ms(100);
+            Ppsum = 0;
 
-        for (int td_i = 0; td_i < td_nb; td_i += 1) {
-            Ppsum += Pp[td_i];
+            for (int td_i = 0; td_i < td_nb; td_i += 1) {
+                Ppsum += Pp[td_i];
+            }
+
+            printf("\r                                                                                ");
+            printf("\r#paths plotted = %g", (double)Ppsum);
+            fflush(stdout);
         }
 
-        printf("\r                                                                                ");
-        printf("\r#paths plotted = %g", (double)Ppsum);
-        fflush(stdout);
-        auto_writetoPNG(1);
+        cm[0] = 0;
+        cm[1] = 0;
+        cm[2] = 0;
+        writeRTtoPNG_and_generate_filenames();
+        cm[0] = 1;
+        cm[1] = 1;
+        cm[2] = 1;
+        writeRTtoPNG_and_generate_filenames();
+        save_status_files();
+        Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
     }
 }
 
 void batch_render()
 {
-    for (int bail = 10; bail <= 100000000; bail *= 10) {
+    for (int bail = 100; bail <= 100000000; bail *= 10) {
         int minn = 0;
         printf("\r                                                                                ");
         printf("\rbail %i   minn %i\n", bail, minn);
         fflush(stdout);
-        load_location_bb_color_param(1, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+        load_location_bb_color_param(1, 1.6, -0.4, 0.625, 32000, 64000, 0, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
         Ppsum = 0;
 
         while (Ppsum < Ppsum_autoPNG_delta) {
@@ -2126,12 +2129,10 @@ void batch_render()
         cm[1] = 0;
         cm[2] = 0;
         writeRtoPNG_and_generate_filename();
-        writeRTtoPNG_and_generate_filenames();
         cm[0] = 1;
         cm[1] = 1;
         cm[2] = 1;
         writeRtoPNG_and_generate_filename();
-        writeRTtoPNG_and_generate_filenames();
     }
 
     td_stop = 1;
@@ -2163,7 +2164,7 @@ int main(int argc, char* argv[])
 
     //// init
     dsfmt_gv_init_gen_rand(0);
-    load_location_bb_color_param(0, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+    load_location_bb_color_param(0, 1.6, -0.4, 0.625, 32000, 64000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));

@@ -455,11 +455,12 @@ void load_location(int pause_calcthreads, double load_zoom, double load_centerx,
         pause_calcthreads_and_wait();
     }
 
-    double rangediv2 = 2.0 / load_zoom;
-    Rr_lo = load_centerx - rangediv2;
-    Rr_up = load_centerx + rangediv2;
-    Ri_lo = load_centery - rangediv2;
-    Ri_up = load_centery + rangediv2;
+    double rangediv2x = 2.0 / load_zoom;
+    double rangediv2y = 2.0 / load_zoom;
+    Rr_lo = load_centerx - rangediv2x;
+    Rr_up = load_centerx + rangediv2x;
+    Ri_lo = load_centery - rangediv2y;
+    Ri_up = load_centery + rangediv2y;
     Rr_ra = Rr_up - Rr_lo;
     Ri_ra = Ri_up - Ri_lo;
 
@@ -3603,7 +3604,7 @@ int main(int argc, char* argv[])
         td_nb = MIN(ceil((double)td_vc_nb / 3) * 3, TD_MAX);
     }
 
-    load_location_bb_color_param(0, 1.8, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+    load_location_bb_color_param(0, 1.6, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));

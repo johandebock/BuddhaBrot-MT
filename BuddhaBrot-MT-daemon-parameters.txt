@@ -1,11 +1,11 @@
 centerx -0.400000
-centery 0.000000
+centery 0.625000
 zoom 1.600000
 windowcenterx -0.400000
-windowcentery 0.000000
+windowcentery 0.625000
 windowzoom 1.600000
-renderw 1000
-renderh 1000
+renderw 32000
+renderh 64000
 windowoffsetw 0
 windowoffseth 0
 
