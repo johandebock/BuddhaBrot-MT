@@ -421,7 +421,7 @@ void load_location(int pause_calcthreads, double load_zoom, double load_centerx,
     }
 
     double rangediv2x = 2.0 / load_zoom;
-    double rangediv2y = 1.0 / load_zoom;
+    double rangediv2y = 2.0 / load_zoom;
     Rr_lo = load_centerx - rangediv2x;
     Rr_up = load_centerx + rangediv2x;
     Ri_lo = load_centery - rangediv2y;
@@ -2109,7 +2109,7 @@ void batch_render()
         printf("\r                                                                                ");
         printf("\rbail %i   minn %i\n", bail, minn);
         fflush(stdout);
-        load_location_bb_color_param(1, 1.6, -0.4, 0.625, 32000, 64000, 0, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+        load_location_bb_color_param(1, 1.6, -0.4, 0.0, 1000, 1000, 0, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, bail, 0, 0, minn, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
         Ppsum = 0;
 
         while (Ppsum < Ppsum_autoPNG_delta) {
@@ -2164,7 +2164,7 @@ int main(int argc, char* argv[])
 
     //// init
     dsfmt_gv_init_gen_rand(0);
-    load_location_bb_color_param(0, 1.6, -0.4, 0.625, 32000, 64000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
+    load_location_bb_color_param(0, 1.6, -0.4, 0.0, 1000, 1000, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0, 0, 0, 5, 1.0, 0);
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
         W[layer_iter] = (unsigned int*)calloc(Ww * Wh, sizeof(unsigned int));
