@@ -1,11 +1,11 @@
 centerx -0.400000
-centery 0.625000
+centery 0.000000
 zoom 1.600000
 windowcenterx -0.400000
-windowcentery 0.625000
+windowcentery 0.000000
 windowzoom 1.600000
-renderw 32000
-renderh 64000
+renderw 1000
+renderh 1000
 windowoffsetw 0
 windowoffseth 0
 
@@ -33,19 +33,19 @@ colortabletype1 0
 colortabletype2 0
 colortabletype3 0
 
-coloringmethod1 0
+coloringmethod1 1
 coloringsumfunc1 0
 coloringsumfuncparam11 5
 colortablescale1 0
 colortableoffset1 0
 
-coloringmethod2 0
+coloringmethod2 1
 coloringsumfunc2 0
 coloringsumfuncparam12 5
 colortablescale2 0
 colortableoffset2 0
 
-coloringmethod3 0
+coloringmethod3 1
 coloringsumfunc3 0
 coloringsumfuncparam13 5
 colortablescale3 0
@@ -53,9 +53,9 @@ colortableoffset3 0
 
 numberofcalculationthreads 3
 
-pathsplottedthread00 0
-pathsplottedthread01 0
-pathsplottedthread02 0
+pathsplottedthread00 340450476
+pathsplottedthread01 335951194
+pathsplottedthread02 323986400
 pathsplottedthread03 0
 pathsplottedthread04 0
 pathsplottedthread05 0
@@ -72,8 +72,8 @@ pathsplottedthread15 0
 pathsplottedthread16 0
 pathsplottedthread17 0
 
-pathsplottedsum 0
+pathsplottedsum 1000388070
 
-rendercountmatrixmax1 0
+rendercountmatrixmax1 74366
 rendercountmatrixmax2 0
 rendercountmatrixmax3 0

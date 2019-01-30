@@ -2050,11 +2050,11 @@ void load_status_files_thread()
         cm[0] = 0;
         cm[1] = 0;
         cm[2] = 0;
-        writeRTtoPNG_and_generate_filenames();
+        writeRtoPNG_and_generate_filename();
         cm[0] = 1;
         cm[1] = 1;
         cm[2] = 1;
-        writeRTtoPNG_and_generate_filenames();
+        writeRtoPNG_and_generate_filename();
         save_status_files();
         Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
     }
@@ -2092,11 +2092,11 @@ void load_param_file_thread()
         cm[0] = 0;
         cm[1] = 0;
         cm[2] = 0;
-        writeRTtoPNG_and_generate_filenames();
+        writeRtoPNG_and_generate_filename();
         cm[0] = 1;
         cm[1] = 1;
         cm[2] = 1;
-        writeRTtoPNG_and_generate_filenames();
+        writeRtoPNG_and_generate_filename();
         save_status_files();
         Ppsum_autoPNG_last = (Ppsum / Ppsum_autoPNG_delta) * Ppsum_autoPNG_delta;
     }

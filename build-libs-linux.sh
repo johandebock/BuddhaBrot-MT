@@ -1,15 +1,15 @@
 mkdir png-linux
 cd png-linux
-wget http://prdownloads.sourceforge.net/libpng/zlib-1.2.8.tar.gz?download
-wget http://prdownloads.sourceforge.net/libpng/libpng-1.6.18.tar.gz?download
-mv zlib-1.2.8.tar.gz\?download zlib-1.2.8.tar.gz
-mv libpng-1.6.18.tar.gz\?download libpng-1.6.18.tar.gz
-tar -zxf zlib-1.2.8.tar.gz
-rm zlib-1.2.8.tar.gz
-tar -zxf libpng-1.6.18.tar.gz
-rm libpng-1.6.18.tar.gz
-mv zlib-1.2.8 zlib
-mv libpng-1.6.18 libpng
+wget http://prdownloads.sourceforge.net/libpng/zlib-1.2.11.tar.gz?download
+wget http://prdownloads.sourceforge.net/libpng/libpng-1.6.36.tar.gz?download
+mv zlib-1.2.11.tar.gz\?download zlib-1.2.11.tar.gz
+mv libpng-1.6.36.tar.gz\?download libpng-1.6.36.tar.gz
+tar -zxf zlib-1.2.11.tar.gz
+rm zlib-1.2.11.tar.gz
+tar -zxf libpng-1.6.36.tar.gz
+rm libpng-1.6.36.tar.gz
+mv zlib-1.2.11 zlib
+mv libpng-1.6.36 libpng
 cd zlib
 ./configure
 make
