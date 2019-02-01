@@ -3574,6 +3574,10 @@ void visualisation_thread()
                 sprintf(titlebar, "lm%i R%ix%i T%ix%i autoPNG%i%i%i deltat%.0e deltaPp%.0e Rmax%g th%i %g", lr_mode, Rw, Rh, Tw, Th, autoWtoPNG, autoRTtoPNG, autoRtoPNG, (double)t_autoPNG_delta, (double)Ppsum_autoPNG_delta, (double)(Rlrmax[0] + Rlrmax[1] + Rlrmax[2]), td_nb, (double)Ppsum);
             }
 
+            printf("\r                                                                                ");
+            printf("\r#paths plotted = %g", (double)Ppsum);
+            fflush(stdout);
+
             SDL_SetWindowTitle(sdl_window, titlebar);
             SDL_UpdateTexture(sdl_texture, NULL, sdl_surface->pixels, Ww * sizeof(Uint32));
             SDL_RenderClear(sdl_renderer);
