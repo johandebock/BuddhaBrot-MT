@@ -17,15 +17,16 @@
 
 #include <omp.h>
 
-#include "SDL.h"
 #include "dSFMT.h"
 #include "png.h"
 
 #ifdef WINDOWS
+#include "SDL.h"
 #include <windows.h>
 #define wait_ms(x) Sleep(x)
 #endif
 #ifdef LINUX
+#include <SDL2/SDL.h>
 #include <unistd.h>
 #define wait_ms(x) usleep((x) * 1000)
 #endif
