@@ -71,8 +71,8 @@ double Cr_ra = Cr_up - Cr_lo; // real range of rectangle C in complex plane
 double Ci_ra = Ci_up - Ci_lo; // imaginary range of rectangle C in complex plane
 
 //// P path (in complex plane), Mandelbrot
-//// P[n] = z_{n+1} = z_n²+c
-//// P = [c, c²+c, (c²+c)²+c, ...]
+//// P[n] = z_{n+1} = z_n2+c
+//// P = [c, c2+c, (c2+c)2+c, ...]
 typedef struct {
     double r; // real
     double i; // imaginary
@@ -90,12 +90,12 @@ long long unsigned int Pp[TD_MAX]; // number of paths plotted , per thread
 //// notMset = set of c for which : z_n unbounded : lim_{n->inf} z_n == inf
 ////
 //// Buddhabrot : notMset : unbounded
-//// plot the unbounded paths = P[n_inf]² > 4 for n_inf < bailout
+//// plot the unbounded paths = P[n_inf]2 > 4 for n_inf < bailout
 //// -> n_inf = core_mandelbrot(c)
 //// skip the certainly bounded paths
 ////
 //// Anti-Buddhabrot : Mset : bounded
-//// plot the bounded paths = P[n_inf]² <= 4 for n_inf == bailout
+//// plot the bounded paths = P[n_inf]2 <= 4 for n_inf == bailout
 //// -> n_inf = core_mandelbrot(c)
 int bb_type[TD_MAX]; // BuddhaBrot type , per thread
 #define BB_TYPE_NB 3 // number of BuddhaBrot types
@@ -694,7 +694,7 @@ void calculation_thread(int td_i)
                     }
                 }
 
-                //// plot the unbounded paths = P[n_inf]² > 4 for n_inf < bailout
+                //// plot the unbounded paths = P[n_inf]2 > 4 for n_inf < bailout
                 int n_inf = core_mandelbrot(td_i, c);
 
                 if (n_inf < bb_bail[td_i] && n_inf >= bb_minn[td_i]) {
@@ -745,7 +745,7 @@ void calculation_thread(int td_i)
                 c.i = Ci_lo + Ci_ra * dsfmt_gv_genrand_close_open();
                 int n_inf = core_mandelbrot(td_i, c);
 
-                //// plot the bounded paths = P[n_inf]² <= 4 for n_inf == bailout
+                //// plot the bounded paths = P[n_inf]2 <= 4 for n_inf == bailout
                 if (n_inf == bb_bail[td_i]) {
                     int minimum_one_point_inside_window = 0;
                     int offset_count = 0;
