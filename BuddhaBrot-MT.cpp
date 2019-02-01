@@ -321,6 +321,9 @@ void reponsive_caption_update(const char* string)
 {
     SDL_SetWindowTitle(sdl_window, string);
     SDL_PollEvent(&sdl_event);
+    printf("\r                                                                                                                                                                ");
+    printf("\r%s", string);
+    fflush(stdout);
 }
 
 void pause_calcthreads_and_wait()
@@ -3575,6 +3578,9 @@ void visualisation_thread()
             }
 
             SDL_SetWindowTitle(sdl_window, titlebar);
+            printf("\r                                                                                                                                                                ");
+            printf("\r%s", titlebar);
+            fflush(stdout);
             SDL_UpdateTexture(sdl_texture, NULL, sdl_surface->pixels, Ww * sizeof(Uint32));
             SDL_RenderClear(sdl_renderer);
             SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
