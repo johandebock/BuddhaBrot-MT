@@ -28,6 +28,7 @@
 #ifdef LINUX
 #include <SDL2/SDL.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #define wait_ms(x) usleep((x) * 1000)
 #endif
 
@@ -3041,8 +3042,7 @@ void sdl_message_check()
                 sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i%i%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type[0], ct_type[1], ct_type[2], cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
             }
 
-            sprintf(commandname, "mkdir \"%s\"", dirname);
-            system(commandname);
+            mkdir(dirname, 0777);
 
             for (int png_offset_x = 0; png_offset_x + Tw <= Rw; png_offset_x += Tw) {
                 for (int png_offset_y = 0; png_offset_y + Th <= Rh; png_offset_y += Th) {
@@ -3183,8 +3183,7 @@ void visualisation_thread()
                     sprintf(dirname, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i R(%.6f %.6f %.1f) ct%i%i%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Rr_lo + Rr_up), 0.5 * (Ri_lo + Ri_up), 4.0 / (Rr_up - Rr_lo), ct_type[0], ct_type[1], ct_type[2], cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
                 }
 
-                sprintf(commandname, "mkdir \"%s\"", dirname);
-                system(commandname);
+                mkdir(dirname, 0777);
 
                 for (int png_offset_x = 0; png_offset_x + Tw <= Rw; png_offset_x += Tw) {
                     for (int png_offset_y = 0; png_offset_y + Th <= Rh; png_offset_y += Th) {
