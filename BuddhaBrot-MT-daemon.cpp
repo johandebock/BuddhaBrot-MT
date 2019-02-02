@@ -2006,8 +2006,8 @@ void writeRTtoPNG_and_generate_filenames()
     if (system(commandname)) {
     }
 
-    for (int png_offset_x = 0; png_offset_x < Rw; png_offset_x += Tw) {
-        for (int png_offset_y = 0; png_offset_y < Rh; png_offset_y += Th) {
+    for (int png_offset_x = 0; png_offset_x + Tw <= Rw; png_offset_x += Tw) {
+        for (int png_offset_y = 0; png_offset_y + Th <= Rh; png_offset_y += Th) {
             double Tr_lo = Rr_lo + png_offset_y / Rhdivr;
             double Tr_up = Tr_lo + Th / Rhdivr;
             double Ti_lo = Ri_lo + png_offset_x / Rwdivi;
