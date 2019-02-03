@@ -1172,7 +1172,7 @@ int load_status_files_minmem()
 
 void writeRtoPNG(const char* filename)
 {
-    reponsive_caption_update("BuddhaBrot-MT: writing to 8-bit png: pausing calculation threads...");
+    reponsive_caption_update("BuddhaBrot-MT: writing render to 8-bit png: pausing calculation threads...");
     pause_calcthreads_and_wait();
 
     if (lr_mode == 0) {
@@ -1413,7 +1413,7 @@ void writeRtoPNG(const char* filename)
     if (lr_mode == 0) {
         if (cm[0] == 0) {
             for (int png_y = 0; png_y < Rh; png_y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing render to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < Rw; png_x++) {
@@ -1448,7 +1448,7 @@ void writeRtoPNG(const char* filename)
 
         if (cm[0] == 1) {
             for (int png_y = 0; png_y < Rh; png_y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing render to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < Rw; png_x++) {
@@ -1483,7 +1483,7 @@ void writeRtoPNG(const char* filename)
 
         if (cm[0] == 2) {
             for (int png_y = 0; png_y < Rh; png_y++) {
-                sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+                sprintf(titlebar, "BuddhaBrot-MT: writing render to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
                 reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < Rw; png_x++) {
@@ -1519,7 +1519,7 @@ void writeRtoPNG(const char* filename)
 
     if (lr_mode == 1) {
         for (int png_y = 0; png_y < Rh; png_y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+            sprintf(titlebar, "BuddhaBrot-MT: writing render to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
             reponsive_caption_update(titlebar);
 
             for (int png_x = 0; png_x < Rw; png_x++) {
@@ -1571,7 +1571,7 @@ void writeRtoPNG(const char* filename)
 
     if (lr_mode == 2) {
         for (int png_y = 0; png_y < Rh; png_y++) {
-            sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
+            sprintf(titlebar, "BuddhaBrot-MT: writing render to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
             reponsive_caption_update(titlebar);
 
             for (int png_x = 0; png_x < Rw; png_x++) {
@@ -1636,7 +1636,7 @@ void writeRtoPNG(const char* filename)
 
 void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_offset_y, int local_png_width, int local_png_height)
 {
-    reponsive_caption_update("BuddhaBrot-MT: writing to 8-bit png: pausing calculation threads...");
+    //reponsive_caption_update("BuddhaBrot-MT: writing to 8-bit png: pausing calculation threads...");
     pause_calcthreads_and_wait();
 
     for (int layer_iter = 0; layer_iter < LR_NB; layer_iter++) {
@@ -1867,7 +1867,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
         if (cm[0] == 0) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / local_png_height * 100);
-                reponsive_caption_update(titlebar);
+                //reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < local_png_width; png_x++) {
                     int ct_i = 0;
@@ -1889,7 +1889,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
         if (cm[0] == 1) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
-                reponsive_caption_update(titlebar);
+                //reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < local_png_width; png_x++) {
                     int ct_i = 0;
@@ -1911,7 +1911,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
         if (cm[0] == 2) {
             for (int png_y = 0; png_y < local_png_height; png_y++) {
                 sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
-                reponsive_caption_update(titlebar);
+                //reponsive_caption_update(titlebar);
 
                 for (int png_x = 0; png_x < local_png_width; png_x++) {
                     int ct_i = 0;
@@ -1934,7 +1934,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
     if (lr_mode == 1) {
         for (int png_y = 0; png_y < local_png_height; png_y++) {
             sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
-            reponsive_caption_update(titlebar);
+            //reponsive_caption_update(titlebar);
 
             for (int png_x = 0; png_x < local_png_width; png_x++) {
                 int ct_i[LR_NB] = {0};
@@ -1973,7 +1973,7 @@ void writeTtoPNG(const char* filename, int local_png_offset_x, int local_png_off
     if (lr_mode == 2) {
         for (int png_y = 0; png_y < local_png_height; png_y++) {
             sprintf(titlebar, "BuddhaBrot-MT: writing to 8-bit png: %.0f%% done...", (double)png_y / Rh * 100);
-            reponsive_caption_update(titlebar);
+            //reponsive_caption_update(titlebar);
 
             for (int png_x = 0; png_x < local_png_width; png_x++) {
                 int ct_i[LR_NB] = {0};
@@ -3021,6 +3021,7 @@ void sdl_message_check()
                 sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i%i%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type[0], ct_type[1], ct_type[2], cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
             }
 
+            reponsive_caption_update("BuddhaBrot-MT: writing window to 8-bit png: pausing calculation threads...");
             writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
         }
 
@@ -3044,6 +3045,7 @@ void sdl_message_check()
 
             mkdir(dirname, 0777);
 
+            reponsive_caption_update("BuddhaBrot-MT: writing tiles to 8-bit pngs: pausing calculation threads...");
             for (int png_offset_x = 0; png_offset_x + Tw <= Rw; png_offset_x += Tw) {
                 for (int png_offset_y = 0; png_offset_y + Th <= Rh; png_offset_y += Th) {
                     double Tr_lo = Rr_lo + png_offset_y / Rhdivr;
@@ -3167,6 +3169,7 @@ void visualisation_thread()
                     sprintf(filename, "lm%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i bb%i.%i.%i.%i.%i W(%.6f %.6f %.1f) ct%i%i%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i cm%i%i.%i.%i.%i %g.png", lr_mode, bb_type[0], bb_bail[0], bb_pps[0], bb_ppe[0], bb_minn[0], bb_type[1], bb_bail[1], bb_pps[1], bb_ppe[1], bb_minn[1], bb_type[2], bb_bail[2], bb_pps[2], bb_ppe[2], bb_minn[2], 0.5 * (Wr_lo + Wr_up), 0.5 * (Wi_lo + Wi_up), 4.0 / (Wr_up - Wr_lo), ct_type[0], ct_type[1], ct_type[2], cm[0], csf[0], csfp1[0], (int)(10.0 * (ct_f[0] - 1.0)), ct_o[0], cm[1], csf[1], csfp1[1], (int)(10.0 * (ct_f[1] - 1.0)), ct_o[1], cm[2], csf[2], csfp1[2], (int)(10.0 * (ct_f[2] - 1.0)), ct_o[2], (double)Ppsum);
                 }
 
+                reponsive_caption_update("BuddhaBrot-MT: writing window to 8-bit png: pausing calculation threads...");
                 writeTtoPNG(filename, RWow, RWoh, Ww, Wh);
             }
 
@@ -3185,6 +3188,7 @@ void visualisation_thread()
 
                 mkdir(dirname, 0777);
 
+                reponsive_caption_update("BuddhaBrot-MT: writing tiles to 8-bit pngs: pausing calculation threads...");
                 for (int png_offset_x = 0; png_offset_x + Tw <= Rw; png_offset_x += Tw) {
                     for (int png_offset_y = 0; png_offset_y + Th <= Rh; png_offset_y += Th) {
                         double Tr_lo = Rr_lo + png_offset_y / Rhdivr;
